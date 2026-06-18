@@ -31,8 +31,8 @@ class GasOptimizer:
         try:
             if self._supports_eip1559:
                 block = self.w3.eth.get_block("latest")
-                base_fee = block.get("baseFeePerGas", None)
-                if base_fee:
+                base_fee = block.get("baseFeePerGas") if isinstance(block, dict) else getattr(block, "baseFeePerGas", None)
+                if base_fee and base_fee > 0:
                     max_fee = int(base_fee * 1.25)
                     max_priority = self.w3.to_wei(self._tip_gwei, "gwei")
                     return {
@@ -42,8 +42,8 @@ class GasOptimizer:
             legacy_gas = self.w3.eth.gas_price
             return {"gasPrice": legacy_gas}
         except Exception as e:
-            print(f"  ⚠️ Gas fetch failed ({e}), using defaults")
-            return {}
+            print(f"  ⚠️ Gas fetch failed ({e}), using safe defaults")
+            return {"gasPrice": self.w3.to_wei(30, "gwei")}
 
 
 class SecureWalletManager:

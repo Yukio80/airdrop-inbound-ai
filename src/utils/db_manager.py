@@ -40,9 +40,15 @@ class DatabaseManager:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT OR REPLACE INTO signals (protocol, chain, tvl, score, last_updated)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (signal['protocol'], signal.get('chain'), signal.get('tvl'), signal.get('score'), datetime.now()))
+                INSERT OR IGNORE INTO signals (protocol, chain, tvl, score, status, last_updated)
+                VALUES (?, ?, ?, ?, 'pending', ?)
+            ''', (signal['protocol'], signal.get('chain'), signal.get('tvl'),
+                  signal.get('score'), datetime.now()))
+            cursor.execute('''
+                UPDATE signals SET chain=?, tvl=?, score=?, last_updated=?
+                WHERE protocol=?
+            ''', (signal.get('chain'), signal.get('tvl'), signal.get('score'),
+                  datetime.now(), signal['protocol']))
             conn.commit()
 
     def get_pending_signals(self):

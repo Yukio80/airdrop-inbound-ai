@@ -31,12 +31,21 @@ class OpportunityScanner:
                 
                 tvl = p.get("tvl") or 0
                 if tvl > 1_000_000:
+                    chain_tvls = p.get("chainTvls", {}) or {}
+                    raw_chains = p.get("chains", [])
+                    if not raw_chains and chain_tvls:
+                        raw_chains = list(chain_tvls.keys())
+
                     signals.append({
                         "protocol": name,
                         "chain": self._infer_chain_from_name(name),
                         "tvl": tvl,
                         "score": 0,
-                        "url": p.get("url")
+                        "url": p.get("url"),
+                        "createdAt": p.get("createdAt", 0),
+                        "audits": p.get("audits", None),
+                        "tvl_snapshots": [],
+                        "chains": raw_chains or [self._infer_chain_from_name(name)],
                     })
             
             return signals[:5]
