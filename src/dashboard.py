@@ -37,7 +37,7 @@ col2.metric("Successfully Farmed", executed_signals)
 col3.metric("Total Transactions", total_txs)
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["🎯 Opportunities", "📜 Transaction Log", "📊 Backtesting"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 Opportunities", "📜 Transaction Log", "📊 Backtesting", "👛 Wallets"])
 
 with tab1:
     st.subheader("Scanned Protocols & Scoring")
@@ -120,6 +120,35 @@ with tab3:
                           title="Strategy Comparison",
                           labels={'value': 'Count', 'variable': 'Status'})
             st.plotly_chart(fig4, use_container_width=True)
+
+with tab4:
+    st.subheader("Multi-Wallet Overview")
+
+    wallet_dir = Path(__file__).parent.parent / "wallets"
+    wallet_files = list(wallet_dir.glob("*.json")) if wallet_dir.exists() else []
+    num_wallets = len(wallet_files)
+
+    st.metric("Total Wallets", num_wallets)
+
+    if wallet_files:
+        wallet_names = [p.stem for p in sorted(wallet_files)]
+        st.dataframe(pd.DataFrame({"wallet": wallet_names}), use_container_width=True)
+    else:
+        st.info("No wallets found. Run multi_wallet_demo.py to create them.")
+
+    st.subheader("Per-Wallet Activity")
+    if not df_txs.empty and "wallet" in df_txs.columns:
+        wallet_tx_counts = df_txs["wallet"].value_counts().reset_index()
+        wallet_tx_counts.columns = ["wallet", "transactions"]
+
+        st.dataframe(wallet_tx_counts, use_container_width=True)
+
+        fig_w = px.bar(wallet_tx_counts, x="wallet", y="transactions",
+                       title="Transactions per Wallet",
+                       color="wallet")
+        st.plotly_chart(fig_w, use_container_width=True)
+    else:
+        st.info("No transaction data for wallet breakdown.")
 
 st.markdown("---")
 st.caption("Airdrop Inbound AI - Qualitative Farming Framework")

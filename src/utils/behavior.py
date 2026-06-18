@@ -37,3 +37,7 @@ class HumanBehaviorSimulator:
     def get_session_duration(self):
         """Returns a random session length."""
         return random.randint(*self.config['session_range'])
+
+    def random_delay_between_wallets(self):
+        """Short delay between switching wallets (1-8 seconds)."""
+        return random.uniform(1.0, 8.0)
