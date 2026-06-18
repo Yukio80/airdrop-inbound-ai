@@ -8,6 +8,7 @@ from eth_account import Account
 from web3 import Web3
 from adapters.uniswap import UniswapAdapter
 from adapters.aave import AaveAdapter
+from adapters.lido import LidoAdapter
 from utils.behavior import HumanBehaviorSimulator
 
 class SecureWalletManager:
@@ -48,7 +49,8 @@ class TaskExecutor:
         self.behavior = HumanBehaviorSimulator()
         self.adapters = {
             "uniswap": UniswapAdapter,
-            "aave": AaveAdapter
+            "aave": AaveAdapter,
+            "lido": LidoAdapter
         }
 
     async def execute_strategy(self, wallet_name, strategy, db=None):
