@@ -71,15 +71,21 @@ Evaluates protocol potential using quantitative models:
 - **TVL Scoring**: Logarithmic weight (up to 30 points)
 - **Growth Metrics**: 7-day TVL growth (up to 40 points)
 - **Funding Analysis**: Round size heuristics (up to 20 points)
+- **Advanced Risk Scoring**: `risk_score()` returns 0-100 (higher = riskier) using protocol age, audit count, TVL volatility, and chain concentration. Protocols with `risk_score > 70` are flagged `HIGH_RISK` and skipped.
 
-**Algorithm**: 0-100 scores, only protocols with score ≥ 30 are executed
+**Algorithm**: 0-100 opportunity scores + 0-100 risk scores. Only protocols with score ≥ 30 and risk ≤ 70 are executed.
 
 ### 3. Execution (`src/execution.py`)
 Handles on-chain operations with safety:
-- **Secure Wallet Manager**: Keystore-encrypted wallets
+- **Secure Wallet Manager**: Keystore-encrypted wallets with multi-wallet support (round-robin, least-used strategies)
+- **GasOptimizer**: EIP-1559-aware gas pricing with legacy fallback
 - **Protocol Adapters**: 
   - Uniswap V3: Smart swaps with path optimization
   - Aave: Liquidity provision with risk management
+  - Compound V3: Supply USDC, withdraw, claim COMP rewards
+  - Curve Finance: Add/remove 3pool liquidity (DAI/USDC/USDT)
+  - SushiSwap: Token swap via Router02 on Arbitrum and Ethereum
+  - Lido: Stake ETH → stETH, wrap to wstETH
 - **Anti-Det. Simulation**: Human-like behavior patterns
 
 ### 4. Persistence (`src/utils/db_manager.py`)
@@ -99,6 +105,35 @@ Real-time monitoring interface:
 - **Protocol List**: Detailed view of all opportunities with scores
 - **Transaction Log**: Complete history of executed trades
 - **Visualizations**: Charts and graphs for trend analysis
+- **Backtesting Tab**: Strategy simulation and comparison
+- **Wallets Tab**: Per-wallet activity breakdown
+- **Analytics Tab**: Historical performance, chain success rates, protocol ROI
+
+### 7. Notifications (`src/notifications.py`)
+Sends real-time alerts via Telegram and Discord:
+- **NEW_OPPORTUNITY**: When a protocol is discovered and scored
+- **EXECUTION_SUCCESS**: When a strategy completes
+- **EXECUTION_FAILED**: When an error occurs during execution
+- **HIGH_RISK_SKIPPED**: When a protocol is skipped due to high risk score
+
+### 8. Backtesting (`src/backtesting.py`)
+Simulates and compares strategies using historical database data:
+- **Backtester**: Runs historical replay, simulates hypothetical configs
+- **Strategy Comparison**: Side-by-side metrics across thresholds/chains/actions
+- **Results**: Signals executed, avg score, estimated transactions, chain distribution
+
+### 9. Analytics (`src/analytics.py`)
+Historical performance analysis engine:
+- **Protocol ROI**: Estimated return based on gas costs vs. airdrop value
+- **Chain Performance**: Success rates by chain
+- **Execution Summary**: Period-over-period status counts, gas estimates in USD
+
+### 10. Multi-Wallet (`src/multi_wallet.py`)
+Parallel farming across multiple wallets:
+- **Mirror Mode**: Every wallet executes the full strategy
+- **Split Mode**: Each wallet gets one action (round-robin)
+- **Randomized Mode**: Shuffled action distribution per wallet
+- **Concurrency Control**: Semaphore-limited parallel execution with human-like delays
 
 ## Configuration
 
@@ -106,6 +141,11 @@ Real-time monitoring interface:
 ```bash
 # Optional: z.ai API key (for enhanced AI decisions)
 export ZAI_API_KEY="your-api-key-here"
+
+# Notifications (optional — skip if not needed)
+export TELEGRAM_BOT_TOKEN="your-bot-token"
+export TELEGRAM_CHAT_ID="your-chat-id"
+export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
 ```
 
 ### RPC Endpoints (Free)

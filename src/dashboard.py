@@ -6,12 +6,14 @@ import streamlit as st
 import pandas as pd
 from src.utils.db_manager import DatabaseManager
 from src.backtesting import Backtester, BacktestConfig
+from src.analytics import PerformanceAnalyzer
 import plotly.express as px
 
 st.set_page_config(page_title="Airdrop Inbound AI Dashboard", layout="wide")
 
 db = DatabaseManager()
 bt = Backtester()
+pa = PerformanceAnalyzer()
 
 st.title("🚀 Airdrop Inbound AI Dashboard")
 st.markdown("Monitoring qualitative opportunities and on-chain execution.")
@@ -37,7 +39,7 @@ col2.metric("Successfully Farmed", executed_signals)
 col3.metric("Total Transactions", total_txs)
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🎯 Opportunities", "📜 Transaction Log", "📊 Backtesting", "👛 Wallets"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Opportunities", "📜 Transaction Log", "📊 Backtesting", "👛 Wallets", "📈 Analytics"])
 
 with tab1:
     st.subheader("Scanned Protocols & Scoring")
@@ -149,6 +151,46 @@ with tab4:
         st.plotly_chart(fig_w, use_container_width=True)
     else:
         st.info("No transaction data for wallet breakdown.")
+
+with tab5:
+    st.subheader("Historical Performance")
+
+    col_days, _ = st.columns([1, 3])
+    days = col_days.slider("Period (days)", 1, 90, 7)
+
+    if st.button("Refresh Analytics"):
+        with st.spinner("Analyzing..."):
+            summary = pa.execution_summary(days)
+
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Executed", summary["executed"])
+        m2.metric("Errors", summary["errors"])
+        m3.metric("Avg Score", summary["avg_score_executed"])
+        m4.metric("TX Count", summary["total_transactions"])
+        m5.metric("Est. Gas (USD)", f"${summary['estimated_gas_usd']}")
+
+        st.subheader("Chain Performance")
+        chains = pa.best_performing_chains(days)
+        if chains:
+            df_chains = pd.DataFrame(chains)
+            st.dataframe(df_chains, use_container_width=True)
+            fig_c = px.bar(df_chains, x="chain", y="success_rate",
+                           title="Success Rate by Chain", color="chain")
+            st.plotly_chart(fig_c, use_container_width=True)
+
+        st.subheader("Protocol ROI")
+        if not df_signals.empty:
+            protocols = df_signals["protocol"].unique()
+            roi_data = []
+            for p in protocols:
+                roi = pa.protocol_roi(p, days)
+                roi_data.append(roi)
+            df_roi = pd.DataFrame(roi_data)
+            st.dataframe(df_roi, use_container_width=True)
+            if not df_roi.empty and "estimated_roi_usd" in df_roi.columns:
+                fig_r = px.bar(df_roi, x="protocol", y="estimated_roi_usd",
+                               title="Estimated ROI by Protocol", color="protocol")
+                st.plotly_chart(fig_r, use_container_width=True)
 
 st.markdown("---")
 st.caption("Airdrop Inbound AI - Qualitative Farming Framework")

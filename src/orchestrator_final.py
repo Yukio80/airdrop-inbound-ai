@@ -14,12 +14,14 @@ from discovery import OpportunityScanner
 from scoring import AirdropPredictor
 from execution import TaskExecutor
 from utils.db_manager import DatabaseManager
+from notifications import NotificationManager
 class AirdropOrchestrator:
     def __init__(self):
         self.scanner = OpportunityScanner()
         self.predictor = AirdropPredictor()
         self.executor = TaskExecutor()
         self.db = DatabaseManager()
+        self.notifier = NotificationManager()
 
     async def run_cycle(self):
         print("🚀 Airdrop Inbound AI - Orchestrator")
@@ -34,17 +36,34 @@ class AirdropOrchestrator:
             
         print(f"   📊 Found {len(signals)} potential opportunities")
         
-        print("\n🎯 Phase 2: Scoring & Storage")
+        print("\n🎯 Phase 2: Scoring & Risk Assessment")
         for signal in signals:
             score = self.predictor.calculate_score(signal)
             signal['score'] = score
+            risk = self.predictor.risk_score(signal)
+            signal['risk_score'] = risk
             self.db.save_signal(signal)
-            
+
+            self.notifier.notify("NEW_OPPORTUNITY", {
+                "protocol": signal["protocol"],
+                "chain": signal.get("chain", "unknown"),
+                "score": score,
+                "tvl": signal.get("tvl", 0),
+            })
+
+            if self.predictor.is_high_risk(signal):
+                print(f"   ⚠️ HIGH RISK {signal['protocol']} - Score: {score}, Risk: {risk}")
+                self.notifier.notify("HIGH_RISK_SKIPPED", {
+                    "protocol": signal["protocol"],
+                    "risk_score": risk,
+                })
+                continue
+
             if score >= 30:
                 status = "✅ EXECUTE"
             else:
                 status = "⏭️ SKIP"
-                
+
             print(f"   {status} {signal['protocol']} - Score: {score}")
         
         print("\n💾 Phase 3: Database Check")
@@ -117,9 +136,17 @@ class AirdropOrchestrator:
                     await self.executor.execute_strategy("main_wallet", strategy, self.db)
                     self.db.update_signal_status(protocol, 'executed')
                     print(f"   ✅ {protocol} completed successfully")
+                    self.notifier.notify("EXECUTION_SUCCESS", {
+                        "protocol": protocol, "action": "strategy",
+                        "wallet": "main_wallet", "tx_hash": "completed",
+                    })
                 except Exception as e:
                     print(f"   ❌ {protocol} failed: {e}")
                     self.db.update_signal_status(protocol, 'error')
+                    self.notifier.notify("EXECUTION_FAILED", {
+                        "protocol": protocol, "action": "strategy",
+                        "wallet": "main_wallet", "error": str(e),
+                    })
             else:
                 print(f"\n   ⏭️ Skipping: {protocol} (Score: {score})")
                 self.db.update_signal_status(protocol, 'ignored')

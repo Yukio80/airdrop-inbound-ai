@@ -2,14 +2,49 @@ import asyncio
 import random
 import json
 import os
-from datetime import datetime
+import sqlite3
+from datetime import datetime, date
 from pathlib import Path
 from eth_account import Account
 from web3 import Web3
 from adapters.uniswap import UniswapAdapter
 from adapters.aave import AaveAdapter
 from adapters.lido import LidoAdapter
+from adapters.compound import CompoundAdapter
+from adapters.curve import CurveAdapter
+from adapters.sushi import SushiAdapter
 from utils.behavior import HumanBehaviorSimulator
+
+
+class GasOptimizer:
+    EIP1559_CHAINS = {1, 42161, 8453}
+    CHAIN_IDS = {"ethereum": 1, "arbitrum": 42161, "base": 8453}
+
+    def __init__(self, w3: Web3, chain_name: str = "arbitrum"):
+        self.w3 = w3
+        self.chain_name = chain_name.lower()
+        self.chain_id = self.CHAIN_IDS.get(self.chain_name, 1)
+        self._supports_eip1559 = self.chain_id in self.EIP1559_CHAINS
+        self._tip_gwei = 1.5
+
+    def get_gas_params(self) -> dict:
+        try:
+            if self._supports_eip1559:
+                block = self.w3.eth.get_block("latest")
+                base_fee = block.get("baseFeePerGas", None)
+                if base_fee:
+                    max_fee = int(base_fee * 1.25)
+                    max_priority = self.w3.to_wei(self._tip_gwei, "gwei")
+                    return {
+                        "maxFeePerGas": max_fee,
+                        "maxPriorityFeePerGas": max_priority,
+                    }
+            legacy_gas = self.w3.eth.gas_price
+            return {"gasPrice": legacy_gas}
+        except Exception as e:
+            print(f"  ⚠️ Gas fetch failed ({e}), using defaults")
+            return {}
+
 
 class SecureWalletManager:
     def __init__(self, keystore_path="wallets"):
@@ -20,6 +55,7 @@ class SecureWalletManager:
             'arbitrum': Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc')),
             'base': Web3(Web3.HTTPProvider('https://mainnet.base.org')),
         }
+        self._round_robin_index = 0
 
     def create_wallet(self, name, password):
         account = Account.create()
@@ -42,6 +78,42 @@ class SecureWalletManager:
         private_key = Account.decrypt(keystore_json, password)
         return Account.from_key(private_key)
 
+    def list_wallets(self):
+        return sorted([p.stem for p in self.keystore_path.glob("*.json")])
+
+    def get_next_wallet(self, strategy: str = "round_robin", db=None) -> tuple:
+        """Return (wallet_name, wallet_account) based on strategy."""
+        wallets = self.list_wallets()
+        if not wallets:
+            raise FileNotFoundError("No wallets available")
+
+        if strategy == "round_robin":
+            name = wallets[self._round_robin_index % len(wallets)]
+            self._round_robin_index += 1
+        elif strategy == "least_used" and db:
+            name = self._least_used_wallet(wallets, db)
+        else:
+            name = wallets[self._round_robin_index % len(wallets)]
+            self._round_robin_index += 1
+
+        wallet = self.load_wallet(name, "default_password")
+        return name, wallet
+
+    def _least_used_wallet(self, wallets, db) -> str:
+        today = date.today().isoformat()
+        conn = db._get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        counts = {}
+        for w in wallets:
+            cursor.execute(
+                "SELECT COUNT(*) as cnt FROM transactions WHERE wallet = ? AND DATE(timestamp) = ?",
+                (w, today),
+            )
+            counts[w] = cursor.fetchone()["cnt"]
+        conn.close()
+        return min(counts, key=counts.get)
+
 class TaskExecutor:
     def __init__(self, wallet_manager=None):
         self.wm = wallet_manager or SecureWalletManager()
@@ -50,7 +122,10 @@ class TaskExecutor:
         self.adapters = {
             "uniswap": UniswapAdapter,
             "aave": AaveAdapter,
-            "lido": LidoAdapter
+            "lido": LidoAdapter,
+            "compound": CompoundAdapter,
+            "curve": CurveAdapter,
+            "sushi": SushiAdapter,
         }
 
     async def execute_strategy(self, wallet_name, strategy, db=None):
