@@ -1,0 +1,6 @@
+requests
+python-dotenv
+web3
+pandas
+numpy
+streamlit
