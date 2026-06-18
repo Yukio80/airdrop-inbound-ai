@@ -44,7 +44,8 @@ async def main_async():
         if score >= 30:
             print(f"   ✅ {signal['protocol']} - Score: {score} -> EXECUTING")
             
-            # Create strategy
+            # Create balanced strategy (swap + supply + stake)
+            chain = signal.get('chain', 'arbitrum')
             strategy = [
                 {
                     'protocol': 'uniswap',
@@ -52,14 +53,20 @@ async def main_async():
                     'amount': 0.1,
                     'token_in': 'WETH',
                     'token_out': 'USDC',
-                    'chain': signal.get('chain', 'arbitrum')
+                    'chain': chain
                 },
                 {
                     'protocol': 'aave',
                     'action': 'supply',
                     'amount': 50,
                     'token': 'USDC',
-                    'chain': signal.get('chain', 'arbitrum')
+                    'chain': chain
+                },
+                {
+                    'protocol': 'lido',
+                    'action': 'stake',
+                    'amount': 0.05,
+                    'chain': 'ethereum'
                 }
             ]
             
