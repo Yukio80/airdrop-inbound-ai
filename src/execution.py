@@ -190,6 +190,7 @@ class SolanaTaskExecutor:
         self.adapters = {
             "jupiter": None,
             "marinade": None,
+            "raydium": None,
         }
 
     async def _get_client(self):
@@ -201,8 +202,10 @@ class SolanaTaskExecutor:
     async def execute_strategy(self, wallet_name, strategy, db=None):
         from adapters.solana.jupiter import JupiterAdapter
         from adapters.solana.marinade import MarinadeAdapter
+        from adapters.solana.raydium import RaydiumAdapter
         self.adapters["jupiter"] = JupiterAdapter
         self.adapters["marinade"] = MarinadeAdapter
+        self.adapters["raydium"] = RaydiumAdapter
 
         try:
             wallet = self.wm.load_wallet(wallet_name)
