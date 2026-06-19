@@ -80,7 +80,7 @@ class SushiAdapter(ProtocolAdapter):
         try:
             contract = self.w3.eth.contract(address=router_addr, abi=self.ROUTER_ABI)
             amount_in_wei = self.w3.to_wei(amount, "ether") if token_in == "WETH" or "ETH" in token_in else int(amount * 1e6)
-            path = [token_in_addr, token_out_addr]
+            path = [self.w3.to_checksum_address(token_in_addr), self.w3.to_checksum_address(token_out_addr)]
             amount_out_min = int(int(amount_in_wei) * (1 - slippage / 100))
             deadline = self.w3.eth.get_block("latest")["timestamp"] + 600
 
