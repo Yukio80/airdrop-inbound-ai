@@ -6,3 +6,6 @@ numpy
 streamlit
 plotly
 httpx
+solana
+solders
+base58

@@ -177,3 +177,78 @@ class TaskExecutor:
                 'tx_hash': tx_hash
             })
 
+
+class SolanaTaskExecutor:
+    def __init__(self, wallet_manager=None):
+        from solana_wallet import SolanaWalletManager
+        from solana.rpc.async_api import AsyncClient
+        from adapters.solana import SOLANA_RPC
+        self.wm = wallet_manager or SolanaWalletManager()
+        self.client = None
+        self.rpc = SOLANA_RPC
+        self.task_history = []
+        self.adapters = {
+            "jupiter": None,
+            "marinade": None,
+        }
+
+    async def _get_client(self):
+        if self.client is None:
+            from solana.rpc.async_api import AsyncClient
+            self.client = AsyncClient(self.rpc)
+        return self.client
+
+    async def execute_strategy(self, wallet_name, strategy, db=None):
+        from adapters.solana.jupiter import JupiterAdapter
+        from adapters.solana.marinade import MarinadeAdapter
+        self.adapters["jupiter"] = JupiterAdapter
+        self.adapters["marinade"] = MarinadeAdapter
+
+        try:
+            wallet = self.wm.load_wallet(wallet_name)
+        except Exception as e:
+            from solders.keypair import Keypair
+            print(f"Wallet error: {e}. Creating new Solana wallet...")
+            pubkey, wallet = self.wm.create_wallet(wallet_name)
+            print(f"  🆕 Created: {pubkey}")
+
+        client = await self._get_client()
+
+        for task in strategy:
+            protocol_name = task['protocol'].lower()
+            action = task['action']
+            print(f"Executing {action} on {protocol_name}...")
+
+            adapter_class = self.adapters.get(protocol_name)
+            if adapter_class:
+                adapter = adapter_class(client, wallet)
+                try:
+                    result = adapter.execute(action, task)
+                    if asyncio.iscoroutine(result):
+                        tx_hash = await result
+                    else:
+                        tx_hash = result
+                    print(f"Success: {tx_hash}")
+                except Exception as e:
+                    print(f"Adapter error: {e}")
+                    tx_hash = f"0x_error_{protocol_name}"
+            else:
+                import hashlib, random
+                tx_hash = hashlib.sha256(f"sol_sim_{protocol_name}_{random.getrandbits(32)}".encode()).hexdigest()
+                print(f"No adapter for {protocol_name}, simulated: {tx_hash}")
+
+            if db:
+                db.log_transaction(str(wallet.pubkey()), protocol_name, action, tx_hash)
+
+            await asyncio.sleep(0.5)
+            self.task_history.append({
+                'timestamp': datetime.now(),
+                'wallet': wallet_name,
+                'task': task,
+                'tx_hash': tx_hash,
+            })
+
+    async def close(self):
+        if self.client:
+            await self.client.close()
+
