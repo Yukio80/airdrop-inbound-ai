@@ -1,0 +1,50 @@
+[
+  {
+    "adapter": "uniswap",
+    "status": "exception",
+    "calldata_preview": null,
+    "estimated_gas": null,
+    "error": "Action uniswap not supported by UniswapAdapter",
+    "duration_ms": 4
+  },
+  {
+    "adapter": "aave",
+    "status": "exception",
+    "calldata_preview": null,
+    "estimated_gas": null,
+    "error": "\nABI Not Found!\nNo element named `allowance` with 0 argument(s).\nProvided argument types: ()\nProvided keyword argument types: {}\n\nTried to find a matching ABI element named `allowance`, but encountere",
+    "duration_ms": 13
+  },
+  {
+    "adapter": "lido",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_lido_stake",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 3
+  },
+  {
+    "adapter": "compound",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_compound_supply",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 8
+  },
+  {
+    "adapter": "curve",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_curve_add_liquidity",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 5
+  },
+  {
+    "adapter": "sushi",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_sushi_swap",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 4
+  }
+]

@@ -1,0 +1,7 @@
+risk:
+  max_position_pct: 2
+  max_bridge_usd: 50
+  min_eth_balance: 0.005
+
+execution:
+  default_mode: dry_run

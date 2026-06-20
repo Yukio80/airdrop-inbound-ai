@@ -1,4 +1,16 @@
-from adapters.base import ProtocolAdapter
+from decimal import Decimal
+from typing import Optional, Dict, Any
+from web3 import Web3
+
+from adapters.base import BaseAdapter
+
+
+class AdapterError(Exception):
+    """Custom exception for adapter failures."""
+    def __init__(self, message: str, context: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.context = context or {}
+
 
 TOKEN_ADDRESSES = {
     "ethereum": {
@@ -13,7 +25,7 @@ TOKEN_ADDRESSES = {
 }
 
 
-class SushiAdapter(ProtocolAdapter):
+class SushiAdapter(BaseAdapter):
     ROUTER_ADDRESSES = {
         "ethereum": "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
         "arbitrum": "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
@@ -47,12 +59,42 @@ class SushiAdapter(ProtocolAdapter):
         },
     ]
 
-    def execute(self, action: str, params: dict):
+    ERC20_ABI = [
+        {"constant": True, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "", "type": "uint256"}], "type": "function"},
+        {"constant": False, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "", "type": "bool"}], "type": "function"},
+    ]
+
+    def __init__(self, w3, wallet, config_path: str = "config.yaml"):
+        super().__init__(w3, wallet, config_path)
+        self.w3 = w3
+        self.wallet = wallet
+
+    def validate(self, **kwargs) -> bool:
+        return True
+
+    def dry_run(self, **kwargs) -> str:
+        return "0x_dry_run_sushi"
+
+    def _retry_call(self, func, *args, **kwargs):
+        import time
+        max_attempts = 3
+        backoff = [1, 2, 4]
+        last_err = None
+        for i in range(max_attempts):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                last_err = e
+                if i < max_attempts - 1:
+                    time.sleep(backoff[i])
+        raise AdapterError(f"RPC call failed after {max_attempts} attempts: {str(last_err)}", context={"func": func.__name__})
+
+    def execute(self, action: str, params: dict, dry_run: bool = False) -> str:
         if action == "swap":
-            return self._swap(params)
+            return self._swap(params, dry_run)
         raise NotImplementedError(f"Action {action} not supported by SushiAdapter")
 
-    def _swap(self, params):
+    def _swap(self, params: dict, dry_run: bool = False) -> str:
         amount = params.get("amount", 0.1)
         if isinstance(amount, str):
             amount = float(amount)
@@ -70,34 +112,61 @@ class SushiAdapter(ProtocolAdapter):
         token_in_addr = tokens.get(token_in)
         token_out_addr = tokens.get(token_out)
 
-        print(f"Preparing SushiSwap swap on {chain.upper()}:")
+        if dry_run:
+            print(f"  [DRY RUN] SushiSwap {token_in}→{token_out} on {chain.upper()}")
+            return "0x_dry_run_sushi_swap"
+
+        print(f"Executing real SushiSwap swap on {chain.upper()}...")
         print(f"  Path: {token_in} → {token_out}")
         print(f"  Amount: {amount} {token_in}")
-        print(f"  Slippage: {slippage}%")
-        print(f"  Gas limit: {gas_limit}")
-        print(f"  Router: {router_addr}")
 
-        try:
-            contract = self.w3.eth.contract(address=router_addr, abi=self.ROUTER_ABI)
-            amount_in_wei = self.w3.to_wei(amount, "ether") if token_in == "WETH" or "ETH" in token_in else int(amount * 1e6)
-            path = [self.w3.to_checksum_address(token_in_addr), self.w3.to_checksum_address(token_out_addr)]
-            amount_out_min = int(int(amount_in_wei) * (1 - slippage / 100))
-            deadline = self.w3.eth.get_block("latest")["timestamp"] + 600
+        contract = self.w3.eth.contract(address=router_addr, abi=self.ROUTER_ABI)
+        is_eth = token_in in ("WETH", "ETH") or "ETH" in token_in
+        amount_in_wei = self.w3.to_wei(amount, "ether") if is_eth else int(amount * 1e6)
+        path = [Web3.to_checksum_address(token_in_addr), Web3.to_checksum_address(token_out_addr)]
+        amount_out_min = int(int(amount_in_wei) * (1 - slippage / 100))
 
-            if token_in == "WETH" or "ETH" in token_in:
-                gas_estimate = contract.functions.swapExactETHForTokens(
-                    amount_out_min, path, self.wallet.address, deadline
-                ).estimate_gas({"from": self.wallet.address, "value": amount_in_wei})
-            else:
-                gas_estimate = contract.functions.swapExactTokensForTokens(
-                    amount_in_wei, amount_out_min, path, self.wallet.address, deadline
-                ).estimate_gas({"from": self.wallet.address})
+        # Handle approval for token swaps
+        if not is_eth:
+            token_contract = self.w3.eth.contract(address=Web3.to_checksum_address(token_in_addr), abi=self.ERC20_ABI)
+            allowance = self._retry_call(token_contract.functions.allowance().call, self.wallet.address, router_addr)
+            if allowance < amount_in_wei:
+                approve_tx = token_contract.functions.approve(router_addr, amount_in_wei).build_transaction({
+                    "from": self.wallet.address,
+                    "nonce": self.w3.eth.get_transaction_count(self.wallet.address),
+                    "gasPrice": self.w3.eth.gas_price,
+                })
+                signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.wallet)
+                self.w3.eth.send_raw_transaction(signed_approve.raw_transaction)
+
+        deadline = self.w3.eth.get_block("latest")["timestamp"] + 600
+
+        if is_eth:
+            tx = contract.functions.swapExactETHForTokens(
+                amount_out_min, path, self.wallet.address, deadline
+            ).build_transaction({
+                "from": self.wallet.address,
+                "value": amount_in_wei,
+                "nonce": self.w3.eth.get_transaction_count(self.wallet.address),
+                "gasPrice": self.w3.eth.gas_price,
+            })
+        else:
+            tx = contract.functions.swapExactTokensForTokens(
+                amount_in_wei, amount_out_min, path, self.wallet.address, deadline
+            ).build_transaction({
+                "from": self.wallet.address,
+                "nonce": self.w3.eth.get_transaction_count(self.wallet.address),
+                "gasPrice": self.w3.eth.gas_price,
+            })
+
+        gas_estimate = self._retry_call(self.w3.eth.estimate_gas, tx)
+        tx["gas"] = gas_estimate
+
+        if dry_run:
             print(f"  ⛽ Gas estimate: {gas_estimate}")
-        except Exception as e:
-            print(f"  ⚠️ Simulation unavailable (using fallback): {e}")
+            return f"0x_dry_run_sushi_swap"
 
-        import hashlib
-        tx_data = f"sushi_swap_{amount}_{token_in}_{token_out}_{self.wallet.address}_{chain}".encode()
-        tx_hash = "0x" + hashlib.sha256(tx_data).hexdigest()[:64]
-        print(f"  📝 Transaction: {tx_hash}")
-        return tx_hash
+        signed_tx = self.w3.eth.account.sign_transaction(tx, self.wallet)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        print(f"  ✅ Swap: {tx_hash.hex()}")
+        return tx_hash.hex()

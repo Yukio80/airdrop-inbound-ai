@@ -12,14 +12,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/src')
 
 from discovery import OpportunityScanner
 from scoring import AirdropPredictor
-from execution import TaskExecutor
+from execution import TaskExecutor, SolanaTaskExecutor
 from utils.db_manager import DatabaseManager
 from notifications import NotificationManager
 class AirdropOrchestrator:
+    EVM_WALLET = "user_real"
+    SOLANA_WALLET = "solana_real"
+    MICRO = True  # True = quantidades mínimas para testar com saldo baixo
+
     def __init__(self):
         self.scanner = OpportunityScanner()
         self.predictor = AirdropPredictor()
         self.executor = TaskExecutor()
+        self.solana_executor = SolanaTaskExecutor(real_mode=True)
         self.db = DatabaseManager()
         self.notifier = NotificationManager()
 
@@ -29,6 +34,15 @@ class AirdropOrchestrator:
         
         print("\n🔍 Phase 1: Discovery")
         signals = await self.scanner.scan_all()
+        solana_known = await self.scanner.scan_solana_known()
+
+        existing = {s["protocol"].lower() for s in signals}
+        for s in solana_known:
+            if s["protocol"].lower() not in existing:
+                signals.append(s)
+                existing.add(s["protocol"].lower())
+
+        print(f"   Total opportunities: {len(signals)}")
         
         if not signals:
             print("   ❌ No opportunities found")
@@ -79,74 +93,83 @@ class AirdropOrchestrator:
         for signal in pending:
             protocol = signal['protocol']
             score = signal['score']
+            chain = signal.get('chain', 'arbitrum').lower()
             
             if score >= 30:
-                print(f"\n   🎮 Executing: {protocol} (Score: {score})")
+                print(f"\n   🎮 Executing: {protocol} (Score: {score}, Chain: {chain})")
                 
-                # Create a realistic strategy based on the protocol
-                strategy = []
-                if score >= 40:
-                    # High-value strategies
-                    strategy = [
-                        {
-                            'protocol': 'uniswap',
-                            'action': 'swap',
-                            'amount': 0.5,
-                            'token_in': 'WETH',
-                            'token_out': 'USDC',
-                            'chain': signal.get('chain', 'arbitrum')
-                        },
-                        {
-                            'protocol': 'uniswap',
-                            'action': 'swap',
-                            'amount': 100,
-                            'token_in': 'USDC',
-                            'token_out': 'WETH',
-                            'chain': signal.get('chain', 'arbitrum')
-                        },
-                        {
-                            'protocol': 'aave',
-                            'action': 'supply',
-                            'amount': 200,
-                            'token': 'USDC',
-                            'chain': signal.get('chain', 'arbitrum')
-                        }
-                    ]
+                if chain == "solana":
+                    m = 0.001 if self.MICRO else 1  # micro multiplier
+                    strategy = []
+                    if score >= 40:
+                        strategy = [
+                            {'protocol': 'jupiter', 'action': 'swap', 'from': 'SOL', 'to': 'USDC', 'amount': round(1.0 * m, 6)},
+                            {'protocol': 'raydium', 'action': 'add_liquidity', 'pool': 'USDC/SOL', 'amount': round(50 * m, 6)},
+                            {'protocol': 'raydium', 'action': 'farm', 'pool': 'SOL/USDC', 'amount': round(50 * m, 6)},
+                            {'protocol': 'kamino', 'action': 'supply', 'amount': round(200 * m, 6), 'token': 'USDC'},
+                            {'protocol': 'sanctum', 'action': 'stake', 'amount': round(2.0 * m, 6), 'lst': 'INF'},
+                            {'protocol': 'jito', 'action': 'stake', 'amount': round(0.5 * m, 6)},
+                            {'protocol': 'meteora', 'action': 'add_liquidity', 'pool': 'SOL/USDC', 'amount': round(10 * m, 6)},
+                            {'protocol': 'fragmetric', 'action': 'stake', 'amount': round(1.0 * m, 6), 'lst': 'SOL'},
+                        ]
+                    else:
+                        strategy = [
+                            {'protocol': 'marinade', 'action': 'stake', 'amount': round(1.0 * m, 6)},
+                            {'protocol': 'jupiter', 'action': 'swap', 'from': 'SOL', 'to': 'USDC', 'amount': round(0.5 * m, 6)},
+                            {'protocol': 'raydium', 'action': 'add_liquidity', 'pool': 'USDC/SOL', 'amount': round(25 * m, 6)},
+                            {'protocol': 'raydium', 'action': 'farm', 'pool': 'SOL/USDC', 'amount': round(25 * m, 6)},
+                            {'protocol': 'kamino', 'action': 'supply', 'amount': round(50 * m, 6), 'token': 'USDC'},
+                            {'protocol': 'meteora', 'action': 'add_liquidity', 'pool': 'SOL/USDC', 'amount': round(5 * m, 6)},
+                            {'protocol': 'fragmetric', 'action': 'stake', 'amount': round(0.5 * m, 6), 'lst': 'SOL'},
+                        ]
+
+                    try:
+                        await self.solana_executor.execute_strategy(self.SOLANA_WALLET, strategy, self.db)
+                        self.db.update_signal_status(protocol, 'executed')
+                        print(f"   ✅ {protocol} (Solana) completed")
+                        self.notifier.notify("EXECUTION_SUCCESS", {
+                            "protocol": protocol, "chain": "solana",
+                            "wallet": self.SOLANA_WALLET, "action": "strategy",
+                            "tx_hash": "completed",
+                        })
+                    except Exception as e:
+                        print(f"   ❌ {protocol} (Solana) failed: {e}")
+                        self.db.update_signal_status(protocol, 'error')
+                        self.notifier.notify("EXECUTION_FAILED", {
+                            "protocol": protocol, "chain": "solana",
+                            "error": str(e),
+                        })
                 else:
-                    # Moderate-value strategies
-                    strategy = [
-                        {
-                            'protocol': 'uniswap',
-                            'action': 'swap',
-                            'amount': 0.1,
-                            'token_in': 'WETH',
-                            'token_out': 'USDC',
-                            'chain': signal.get('chain', 'arbitrum')
-                        },
-                        {
-                            'protocol': 'aave',
-                            'action': 'supply',
-                            'amount': 50,
-                            'token': 'USDC',
-                            'chain': signal.get('chain', 'arbitrum')
-                        }
-                    ]
-                
-                try:
-                    await self.executor.execute_strategy("main_wallet", strategy, self.db)
-                    self.db.update_signal_status(protocol, 'executed')
-                    print(f"   ✅ {protocol} completed successfully")
-                    self.notifier.notify("EXECUTION_SUCCESS", {
-                        "protocol": protocol, "action": "strategy",
-                        "wallet": "main_wallet", "tx_hash": "completed",
-                    })
-                except Exception as e:
-                    print(f"   ❌ {protocol} failed: {e}")
-                    self.db.update_signal_status(protocol, 'error')
-                    self.notifier.notify("EXECUTION_FAILED", {
-                        "protocol": protocol, "action": "strategy",
-                        "wallet": "main_wallet", "error": str(e),
-                    })
+                    # EVM strategies
+                    m = 0.0001 if self.MICRO else 1  # EVM ainda menor
+                    strategy = []
+                    if score >= 40:
+                        strategy = [
+                            {'protocol': 'uniswap', 'action': 'swap', 'amount': round(0.5 * m, 8), 'token_in': 'WETH', 'token_out': 'USDC', 'chain': chain},
+                            {'protocol': 'uniswap', 'action': 'swap', 'amount': round(100 * m, 8), 'token_in': 'USDC', 'token_out': 'WETH', 'chain': chain},
+                            {'protocol': 'aave', 'action': 'supply', 'amount': round(200 * m, 8), 'token': 'USDC', 'chain': chain},
+                        ]
+                    else:
+                        strategy = [
+                            {'protocol': 'uniswap', 'action': 'swap', 'amount': round(0.1 * m, 8), 'token_in': 'WETH', 'token_out': 'USDC', 'chain': chain},
+                            {'protocol': 'aave', 'action': 'supply', 'amount': round(50 * m, 8), 'token': 'USDC', 'chain': chain},
+                        ]
+                    
+                    try:
+                        await self.executor.execute_strategy(self.EVM_WALLET, strategy, self.db)
+                        self.db.update_signal_status(protocol, 'executed')
+                        print(f"   ✅ {protocol} completed successfully")
+                        self.notifier.notify("EXECUTION_SUCCESS", {
+                            "protocol": protocol, "action": "strategy",
+                            "wallet": self.EVM_WALLET, "tx_hash": "completed",
+                        })
+                    except Exception as e:
+                        print(f"   ❌ {protocol} failed: {e}")
+                        self.db.update_signal_status(protocol, 'error')
+                        self.notifier.notify("EXECUTION_FAILED", {
+                            "protocol": protocol, "action": "strategy",
+                            "wallet": self.EVM_WALLET, "error": str(e),
+                        })
             else:
                 print(f"\n   ⏭️ Skipping: {protocol} (Score: {score})")
                 self.db.update_signal_status(protocol, 'ignored')

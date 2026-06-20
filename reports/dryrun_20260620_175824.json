@@ -1,0 +1,50 @@
+[
+  {
+    "adapter": "uniswap",
+    "status": "exception",
+    "calldata_preview": null,
+    "estimated_gas": null,
+    "error": "Failed to get quote: ('execution reverted', '0x')",
+    "duration_ms": 911
+  },
+  {
+    "adapter": "aave",
+    "status": "exception",
+    "calldata_preview": null,
+    "estimated_gas": null,
+    "error": "{'code': -32000, 'message': 'insufficient funds for transfer'}",
+    "duration_ms": 1524
+  },
+  {
+    "adapter": "lido",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_lido_stake",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 4
+  },
+  {
+    "adapter": "compound",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_compound_supply",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 2
+  },
+  {
+    "adapter": "curve",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_curve_add_liquidity",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 9
+  },
+  {
+    "adapter": "sushi",
+    "status": "ok",
+    "calldata_preview": "0x_dry_run_sushi_swap",
+    "estimated_gas": null,
+    "error": null,
+    "duration_ms": 9
+  }
+]

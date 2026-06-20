@@ -1,196 +1,325 @@
+"""Terminal dashboard — painel de controle do Airdrop Inbound AI."""
+
+import json
+import sqlite3
+import subprocess
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
+from datetime import datetime
 
-import streamlit as st
-import pandas as pd
-from src.utils.db_manager import DatabaseManager
-from src.backtesting import Backtester, BacktestConfig
-from src.analytics import PerformanceAnalyzer
-import plotly.express as px
+sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-st.set_page_config(page_title="Airdrop Inbound AI Dashboard", layout="wide")
+from web3 import Web3
+from solana.rpc.api import Client as SolanaClient
+from solders.pubkey import Pubkey
 
-db = DatabaseManager()
-bt = Backtester()
-pa = PerformanceAnalyzer()
+ROOT = Path(__file__).parent.parent
+DB = ROOT / "airdrop_bot.db"
+EVM_ADDR = "0x50C905a210E5585B0F0124a0B53195f7Eb3d994C"
+SOL_KEYSTORE = ROOT / "wallets" / "solana_real.sol.json"
 
-st.title("🚀 Airdrop Inbound AI Dashboard")
-st.markdown("Monitoring qualitative opportunities and on-chain execution.")
+EVM_RPCS = {
+    "Arbitrum": ("https://arb1.arbitrum.io/rpc", "ETH"),
+    "BSC": ("https://bsc-dataseed.binance.org", "BNB"),
+    "Ethereum": ("https://eth.llamarpc.com", "ETH"),
+    "Sepolia": ("https://ethereum-sepolia.publicnode.com", "ETH"),
+    "Hoodi": ("https://ethereum-hoodi-rpc.publicnode.com", "ETH"),
+    "Amoy": ("https://rpc-amoy.polygon.technology", "POL"),
+}
 
-# Sidebar
-st.sidebar.header("Controls")
-if st.sidebar.button("Refresh Data"):
-    st.rerun()
+TESTNETS = {"Sepolia", "Holesky", "Amoy"}
+SOL_RPC = "https://api.mainnet-beta.solana.com"
 
-# Fetch data
-with db._get_connection() as conn:
-    df_signals = pd.read_sql("SELECT * FROM signals", conn)
-    df_txs = pd.read_sql("SELECT * FROM transactions", conn)
+ERC20_ABI = json.loads(
+    '[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"type":"uint256"}],"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"type":"uint8"}],"type":"function"}]'
+)
+USDT_ARB = "0xFd086bC68514b5b0b03Cf118c1e250a1572Fb6b4"
 
-total_signals = len(df_signals)
-executed_signals = len(df_signals[df_signals['status'] == 'executed']) if not df_signals.empty else 0
-total_txs = len(df_txs)
 
-# Metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Protocols Scanned", total_signals)
-col2.metric("Successfully Farmed", executed_signals)
-col3.metric("Total Transactions", total_txs)
+def _sol_addr():
+    try:
+        with open(SOL_KEYSTORE) as f:
+            d = json.load(f)
+        return d.get("public_key") or d.get("address")
+    except Exception:
+        return None
 
-# Tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Opportunities", "📜 Transaction Log", "📊 Backtesting", "👛 Wallets", "📈 Analytics"])
 
-with tab1:
-    st.subheader("Scanned Protocols & Scoring")
-    if not df_signals.empty:
-        df_signals = df_signals.sort_values(by="score", ascending=False)
+def _evm_bal(rpc, addr, token=None):
+    try:
+        w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 8}))
+        if not w3.is_connected():
+            return None, None
+        bal = w3.eth.get_balance(addr)
+        native = bal / 1e18
+        tok = None
+        if token:
+            c = w3.eth.contract(address=Web3.to_checksum_address(token), abi=ERC20_ABI)
+            dec = c.functions.decimals().call()
+            tok = c.functions.balanceOf(addr).call() / 10**dec
+        return native, tok
+    except Exception:
+        return None, None
 
-        def color_status(val):
-            color = 'green' if val == 'executed' else 'orange' if val == 'pending' else 'grey'
-            return f'color: {color}'
 
-        st.dataframe(df_signals.style.map(color_status, subset=['status']), use_container_width=True)
+def _sol_bal():
+    addr = _sol_addr()
+    if not addr:
+        return None
+    try:
+        c = SolanaClient(SOL_RPC)
+        resp = c.get_balance(Pubkey.from_string(addr))
+        if hasattr(resp, "value"):
+            return resp.value / 1e9
+        return resp.get("result", {}).get("value", 0) / 1e9
+    except Exception:
+        return None
 
-        fig = px.bar(df_signals, x='protocol', y='score', color='status',
-                     title="Opportunity Scores",
-                     labels={'score': 'Quantitative Score', 'protocol': 'Protocol'})
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No data available. Run the orchestrator first!")
 
-with tab2:
-    st.subheader("Detailed Execution Log")
-    if not df_txs.empty:
-        st.table(df_txs.sort_values(by="timestamp", ascending=False))
-    else:
-        st.info("No transactions recorded yet.")
-
-with tab3:
-    st.subheader("Backtesting Engine")
-
-    col_a, col_b, col_c = st.columns(3)
-    threshold = col_a.slider("Score Threshold", 0, 100, 30)
-    chain_opts = st.multiselect("Chains", ["arbitrum", "ethereum", "base"], default=["arbitrum", "ethereum"])
-    action_opts = st.multiselect("Actions", ["swap", "supply", "stake"], default=["swap", "supply", "stake"])
-
-    if st.button("Run Backtest"):
-        config = BacktestConfig(
-            name=f"threshold={threshold}",
-            score_threshold=threshold,
-            chains=chain_opts,
-            actions=action_opts,
+def _cron_status():
+    try:
+        r = subprocess.run(
+            ["crontab", "-l"], capture_output=True, text=True, timeout=10
         )
+        if r.returncode == 0 and "ecosystem.py" in r.stdout:
+            for line in r.stdout.splitlines():
+                if "ecosystem.py" in line:
+                    parts = line.strip().split()
+                    if len(parts) >= 2:
+                        return f"{parts[1]}:{parts[0]}"
+            return "agendado"
+        return "não agendado"
+    except Exception:
+        return "n/d"
 
-        with st.spinner("Running backtest..."):
-            result = bt.simulate(config)
 
-        st.success(f"Backtest complete: {result.executed} protocols would execute")
+def _count_eligible(g, camps):
+    e = 0
+    for c in camps:
+        try:
+            elig = g.check_eligibility(c["id"], EVM_ADDR)
+            camp = elig.get("data", {}).get("campaign")
+            if camp and camp.get("credentialGroups"):
+                if any(
+                    any(cond.get("eligible") for cond in grp.get("conditions", []))
+                    for grp in camp["credentialGroups"]
+                ):
+                    e += 1
+        except Exception:
+            pass
+    return e
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Signals", result.total_signals)
-        m2.metric("Would Execute", result.executed)
-        m3.metric("Avg Score", f"{result.avg_score:.1f}")
-        m4.metric("Est. Tx", result.total_transactions)
 
-        if result.protocol_scores:
-            df_proto = pd.DataFrame(result.protocol_scores)
-            fig2 = px.bar(df_proto.head(10), x='protocol', y='score', color='chain',
-                          title="Top Protocols by Score")
-            st.plotly_chart(fig2, use_container_width=True)
+def _get_integrity_report():
+    """Query SQLite for execution integrity metrics."""
+    import datetime as dt
+    try:
+        conn = sqlite3.connect(str(DB))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-        if result.action_distribution:
-            df_act = pd.DataFrame(list(result.action_distribution.items()),
-                                  columns=["action", "count"])
-            fig3 = px.pie(df_act, values='count', names='action', title="Action Distribution")
-            st.plotly_chart(fig3, use_container_width=True)
+        now = dt.datetime.now()
+        cut_7d = (now - dt.timedelta(days=7)).isoformat()
+        cut_30d = (now - dt.timedelta(days=30)).isoformat()
 
-        st.text(bt.report(result))
+        rows_7d = cursor.execute(
+            "SELECT tx_hash, protocol, status FROM transactions WHERE timestamp >= ?",
+            (cut_7d,)
+        ).fetchall()
+        rows_30d = cursor.execute(
+            "SELECT tx_hash, protocol, status FROM transactions WHERE timestamp >= ?",
+            (cut_30d,)
+        ).fetchall()
 
-    with st.expander("Compare Strategies"):
-        configs = [
-            BacktestConfig(name="conservative", score_threshold=50, chains=["arbitrum"]),
-            BacktestConfig(name="moderate", score_threshold=30, chains=["arbitrum", "ethereum"]),
-            BacktestConfig(name="aggressive", score_threshold=20, chains=["arbitrum", "ethereum", "base"]),
-        ]
-        if st.button("Compare All"):
-            results = bt.compare(configs)
-            df_comp = bt.to_dataframe(results)
-            st.dataframe(df_comp, use_container_width=True)
+        conn.close()
 
-            fig4 = px.bar(df_comp, x='config', y=['executed', 'skipped'],
-                          title="Strategy Comparison",
-                          labels={'value': 'Count', 'variable': 'Status'})
-            st.plotly_chart(fig4, use_container_width=True)
+        def classify(rows):
+            real = 0
+            sim = 0
+            failed = 0
+            active_protocols = set()
+            for r in rows:
+                h = r["tx_hash"] or ""
+                if h.startswith("0x_error"):
+                    failed += 1
+                elif h.startswith("0x_sim") or h == "":
+                    sim += 1
+                elif h.startswith("0x_"):
+                    sim += 1
+                else:
+                    real += 1
+                    if r["protocol"]:
+                        active_protocols.add(r["protocol"].lower())
+            return real, sim, failed, active_protocols
 
-with tab4:
-    st.subheader("Multi-Wallet Overview")
+        real_7d, sim_7d, failed_7d, active_7d = classify(rows_7d)
+        real_30d, sim_30d, failed_30d, active_30d = classify(rows_30d)
+        total_30d = real_30d + sim_30d + failed_30d
 
-    wallet_dir = Path(__file__).parent.parent / "wallets"
-    wallet_files = list(wallet_dir.glob("*.json")) if wallet_dir.exists() else []
-    num_wallets = len(wallet_files)
+        known_adapters = {"uniswap", "aave", "lido", "compound", "curve", "sushi"}
+        no_activity = sorted(known_adapters - active_30d)
 
-    st.metric("Total Wallets", num_wallets)
+        return {
+            "real_7d": real_7d,
+            "sim_7d": sim_7d,
+            "failed_7d": failed_7d,
+            "real_30d": real_30d,
+            "sim_30d": sim_30d,
+            "failed_30d": failed_30d,
+            "total_30d": total_30d,
+            "rate_7d": (real_7d / (real_7d + sim_7d + failed_7d) * 100) if (real_7d + sim_7d + failed_7d) > 0 else 0,
+            "no_activity_30d": no_activity,
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
-    if wallet_files:
-        wallet_names = [p.stem for p in sorted(wallet_files)]
-        st.dataframe(pd.DataFrame({"wallet": wallet_names}), use_container_width=True)
+def show_dashboard():
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    print()
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║           Airdrop Inbound AI — Painel de Controle           ║")
+    print(f"║                     {now:^44}║")
+    print("╚══════════════════════════════════════════════════════════════╝")
+    
+    # ... (Saldos EVM, Solana, Galxe sections) ...
+    # (I will insert the integrity section at the end)
+
+    print()
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║           Airdrop Inbound AI — Painel de Controle           ║")
+    print(f"║                     {now:^44}║")
+    print("╚══════════════════════════════════════════════════════════════╝")
+
+    # EVM
+    print("\n 📦 Saldos EVM")
+    print(" ──────────────────────────────────────────────────────")
+    print(f"  Carteira: {EVM_ADDR[:8]}...{EVM_ADDR[-4:]}")
+    for chain, (rpc, native) in EVM_RPCS.items():
+        bal, tok = _evm_bal(rpc, EVM_ADDR, USDT_ARB if chain == "Arbitrum" else None)
+        if bal is None:
+            print(f"    {chain:<10} ⚠️  erro de conexão")
+        elif bal < 0.0001 and chain in TESTNETS:
+            print(f"    {chain:<10} {bal:.6f} {native}  ⛔ sem fundos")
+        else:
+            parts = [f"    {chain:<10} {bal:.6f} {native}"]
+            if tok is not None:
+                parts.append(f"  USDT: {tok:.4f}")
+            print("".join(parts))
+
+    # Solana
+    sol_addr = _sol_addr()
+    sol_bal = _sol_bal()
+    print("\n 🌞 Saldo Solana")
+    print(" ──────────────────────────────────────────────────────")
+    if sol_addr:
+        print(f"  Carteira: {sol_addr[:8]}...{sol_addr[-4:]}")
+        if sol_bal is not None:
+            print(f"    SOL      {sol_bal:.6f}")
+        else:
+            print(f"    SOL      ⚠️  erro de conexão")
     else:
-        st.info("No wallets found. Run multi_wallet_demo.py to create them.")
+        print("  Carteira não encontrada")
 
-    st.subheader("Per-Wallet Activity")
-    if not df_txs.empty and "wallet" in df_txs.columns:
-        wallet_tx_counts = df_txs["wallet"].value_counts().reset_index()
-        wallet_tx_counts.columns = ["wallet", "transactions"]
+    # Galxe
+    print("\n 🎯 Galxe Quests")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        from utils.db_manager import DatabaseManager
+        scan = DatabaseManager(str(DB)).get_last_galxe_scan()
+        if scan:
+            print(f"  Último scan:       {scan['timestamp'][:19]}")
+            print(f"  Campanhas ativas:  {scan['total']}")
+            print(f"  Elegíveis (abertas): {scan['open_count']}")
+            print(f"  Bloqueadas:        {scan['blocked']}")
+            if scan["open_list"]:
+                for c in scan["open_list"][:5]:
+                    print(f"    🔓 {c['name'][:50]}")
+                    print(f"       https://galxe.com/campaign/{c['id']}")
+                if len(scan["open_list"]) > 5:
+                    print(f"    ... +{len(scan['open_list'])-5} mais")
+        else:
+            from quests.galxe import GalxeClient
+            g = GalxeClient()
+            camps = g.active_campaigns(first=50)
+            print(f"  Campanhas ativas:  {len(camps)}")
+    except Exception as e:
+        print(f"  ⚠️  {e}")
 
-        st.dataframe(wallet_tx_counts, use_container_width=True)
+    # Transactions
+    print("\n 📜 Últimas Transações")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        conn = sqlite3.connect(str(DB))
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT timestamp, protocol, action, tx_hash FROM transactions ORDER BY timestamp DESC LIMIT 8"
+        ).fetchall()
+        conn.close()
+        if rows:
+            for r in rows:
+                ts = r["timestamp"][:19] if r["timestamp"] else "?"
+                proto = r["protocol"][:12].ljust(12)
+                act = r["action"][:10].ljust(10)
+                tx = (
+                    r["tx_hash"][:10] + "..."
+                    if r["tx_hash"] and len(r["tx_hash"]) > 10
+                    else r["tx_hash"]
+                )
+                print(f"  {ts}  {proto} {act} {tx}")
+        else:
+            print("  Nenhuma transação registrada ainda")
+    except Exception as e:
+        print(f"  ⚠️  {e}")
 
-        fig_w = px.bar(wallet_tx_counts, x="wallet", y="transactions",
-                       title="Transactions per Wallet",
-                       color="wallet")
-        st.plotly_chart(fig_w, use_container_width=True)
+    # Status
+    print("\n 📊 Status do Farm")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        conn = sqlite3.connect(str(DB))
+        tx_cnt = conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
+        last_tx = conn.execute(
+            "SELECT MAX(timestamp) FROM transactions"
+        ).fetchone()[0]
+        execd = conn.execute(
+            "SELECT COUNT(*) FROM signals WHERE status='executed'"
+        ).fetchone()[0]
+        pend = conn.execute(
+            "SELECT COUNT(*) FROM signals WHERE status='pending'"
+        ).fetchone()[0]
+        conn.close()
+        print(f"  Transações totais:     {tx_cnt}")
+        print(f"  Protocolos farmados:   {execd}")
+        print(f"  Pendentes:             {pend}")
+        print(
+            f"  Última transação:      {last_tx[:19] if last_tx else 'nunca'}"
+        )
+    except Exception as e:
+        print(f"  ⚠️  {e}")
+
+    # Integrity
+    print("\n 🛡️  EXECUTION INTEGRITY")
+    print(" ──────────────────────────────────────────────────────")
+    report = _get_integrity_report()
+    if "error" in report:
+        print(f"  ⚠️  Error: {report['error']}")
     else:
-        st.info("No transaction data for wallet breakdown.")
+        print(f"  Real txs (7d):        {report['real_7d']:>4}   ✅")
+        print(f"  Simulated calls (7d): {report['sim_7d']:>4}   ⚠️")
+        print(f"  Failed txs (7d):      {report['failed_7d']:>4}   {'🔴' if report['failed_7d'] > 0 else '✅'}")
+        print(f"  Real txs (30d):       {report['real_30d']:>4}")
+        if report["no_activity_30d"]:
+            print(f"  Adapters no real tx (30d): {', '.join(report['no_activity_30d'])}   ⚠️")
+        else:
+            print(f"  Adapters no real tx (30d): none   ✅")
+    
+    cr = _cron_status()
+    print(f"\n  Cron diário:           {cr}")
+    print()
+    print(f"  💡 Dica: Rode  python3 ecosystem.py all  para ciclo completo")
+    print()
 
-with tab5:
-    st.subheader("Historical Performance")
 
-    col_days, _ = st.columns([1, 3])
-    days = col_days.slider("Period (days)", 1, 90, 7)
-
-    if st.button("Refresh Analytics"):
-        with st.spinner("Analyzing..."):
-            summary = pa.execution_summary(days)
-
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("Executed", summary["executed"])
-        m2.metric("Errors", summary["errors"])
-        m3.metric("Avg Score", summary["avg_score_executed"])
-        m4.metric("TX Count", summary["total_transactions"])
-        m5.metric("Est. Gas (USD)", f"${summary['estimated_gas_usd']}")
-
-        st.subheader("Chain Performance")
-        chains = pa.best_performing_chains(days)
-        if chains:
-            df_chains = pd.DataFrame(chains)
-            st.dataframe(df_chains, use_container_width=True)
-            fig_c = px.bar(df_chains, x="chain", y="success_rate",
-                           title="Success Rate by Chain", color="chain")
-            st.plotly_chart(fig_c, use_container_width=True)
-
-        st.subheader("Protocol ROI")
-        if not df_signals.empty:
-            protocols = df_signals["protocol"].unique()
-            roi_data = []
-            for p in protocols:
-                roi = pa.protocol_roi(p, days)
-                roi_data.append(roi)
-            df_roi = pd.DataFrame(roi_data)
-            st.dataframe(df_roi, use_container_width=True)
-            if not df_roi.empty and "estimated_roi_usd" in df_roi.columns:
-                fig_r = px.bar(df_roi, x="protocol", y="estimated_roi_usd",
-                               title="Estimated ROI by Protocol", color="protocol")
-                st.plotly_chart(fig_r, use_container_width=True)
-
-st.markdown("---")
-st.caption("Airdrop Inbound AI - Qualitative Farming Framework")
+if __name__ == "__main__":
+    show_dashboard()

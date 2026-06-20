@@ -24,6 +24,9 @@ class AirdropPredictor:
         if signal.get("has_points_program"):
             score += 20
 
+        if signal.get("chain") == "solana":
+            score += 15
+
         return min(100, score)
 
     def risk_score(self, signal: dict) -> int:

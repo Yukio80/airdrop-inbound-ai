@@ -1,0 +1,38 @@
+[
+  {
+    "adapter": "uniswap",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  },
+  {
+    "adapter": "aave",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  },
+  {
+    "adapter": "lido",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  },
+  {
+    "adapter": "compound",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  },
+  {
+    "adapter": "curve",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  },
+  {
+    "adapter": "sushi",
+    "status": "exception",
+    "error": "ARBITRUM_RPC_URL not set",
+    "duration_ms": 0
+  }
+]

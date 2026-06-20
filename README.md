@@ -1,283 +1,218 @@
 # Airdrop Inbound AI
 
-## Framework Overview
+Capital-efficient airdrop farming framework: monitoramento de quests (Galxe) + automação de testnets + proof-of-activity em Solana + interações reais em EVM (Arbitrum).
 
-**Airdrop Inbound AI** is a qualitative airdrop farming framework focused on intelligent discovery and automated execution. It's designed to be more sustainable, educational, and technically interesting than traditional mass-sybil approaches.
+## Comandos
 
-## Core Philosophy
-
-Instead of creating hundreds of fake wallets, this framework:
-- **Discovers** high-quality opportunities using real data
-- **Scores** them based on quantitative and qualitative metrics
-- **Executes** only the most promising protocols
-- **Persists** all activity for analysis and learning
-- **Simulates** human behavior to avoid detection
-
-## Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   DISCOVERY     │────▶│   SCORING/IA     │────▶│   EXECUÇÃO      │
-│  (Oportunidades)│     │  (Priorização)   │     │  (On-chain)     │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-        │                        │                        │
-   - Twitter/X              - Métricas on-chain      - Wallet manager
-   - Discord/Telegram       - Sentimento NLP         - Bridge/swap auto
-   - Dados de funding       - Modelo preditivo       - Task scheduler
-   - GitHub activity        - Risk scoring           - Gas optimizer
-```
-
-## Quick Start Guide
-
-### Prerequisites
 ```bash
-python3 >= 3.8
+python3 ecosystem.py dashboard   # Painel com saldos, quests e transações
+python3 ecosystem.py scan        # Scan Galxe + DeFiLlama
+python3 ecosystem.py farm        # Farm testnets + Solana
+python3 ecosystem.py all         # Ciclo completo (scan + bridge + quest farm + farm)
+python3 ecosystem.py audit       # Auditor de footprint on-chain (Arbiscan + Solana)
+python3 ecosystem.py dryrun      # Stress test dry-run em todos os adapters
+python3 ecosystem.py schedule    # Agenda cron diário (08:00)
+```
+
+## Status Atual
+
+| Componente | Status |
+|------------|--------|
+| Discovery (DeFiLlama) | Real |
+| Galxe Scanner | Real |
+| Galxe Quest Executor | Real |
+| Uniswap V3 | Real + dry-run |
+| SushiSwap | Real + dry-run |
+| Aave V3 | Real + dry-run |
+| Compound V3 | Real + dry-run |
+| Curve 3Pool | Real + dry-run |
+| Lido (stake/wrap) | Real + dry-run |
+| LiFi Bridge | Real |
+| Solana Fragmetric | Real |
+| Solana Jito | Real |
+| Solana Jupiter | Real |
+| Solana Kamino | Real |
+| Solana Marinade | Real |
+| Solana Meteora | Real |
+| Solana Raydium | Real |
+| Solana Sanctum | Real |
+| Footprint Auditor | Real (Arbiscan + Solana RPC) |
+| Testnet Farm (Sepolia/Hoodi/Amoy) | Real |
+| Dashboard | Real |
+| SQLite Proof Tracking | Real |
+
+## Execution Flow
+
+1. **Discovery**
+   ├── DeFiLlama (Real-time protocol discovery)
+   └── Galxe (Quest & Task scanning)
+
+2. **Scoring**
+   └── Opportunity ranking (TVL, Growth, Airdrop probability)
+
+3. **Execution**
+   ├── Uniswap V3 (Swaps)
+   ├── SushiSwap (Swaps)
+   ├── Aave V3 (Lending/Supply)
+   ├── Compound V3 (Supply/Withdraw)
+   ├── Curve 3Pool (Add/Remove liquidity)
+   ├── Lido (Stake ETH → stETH, wrap → wstETH)
+   └── Galxe (On-chain task fulfillment)
+
+4. **Solana Activity**
+   ├── Fragmetric (Stake SOL)
+   ├── Jito (Stake SOL)
+   ├── Jupiter (Swaps)
+   ├── Kamino (Supply/Borrow)
+   ├── Marinade (Stake SOL)
+   ├── Meteora (DLMM pools)
+   ├── Raydium (Swaps, LP)
+   └── Sanctum (Stake SOL)
+
+5. **Cross-Chain Funding**
+   └── LiFi Bridge (Arbitrum ↔ BSC)
+
+6. **Proof Tracking**
+   └── SQLite (Transaction logs & status persistence)
+
+7. **Footprint Audit**
+   └── Arbiscan API + Solana RPC → SQLite reconciliation
+
+8. **Dashboard**
+   └── Terminal (Real-time monitoring & analytics)
+
+## Dry-Run Mode
+
+Todos os adapters suportam `dry_run=True`, que retorna resultados simulados sem enviar transações reais. Use para validar fluxos antes de executar com fundos reais:
+
+```bash
+python3 scripts/stress_test_dryrun.py   # Testa todos os adapters
+python3 ecosystem.py all --dry-run      # Ciclo completo simulado
+python3 ecosystem.py dryrun             # Alias para stress test
+```
+
+## Auditor de Footprint
+
+O `FootprintAuditor` consulta o Arbiscan API e nós RPC Solana para reconciliar o histórico de transações no SQLite local:
+
+```bash
+python3 ecosystem.py audit              # Auditor completo
+python3 ecosystem.py audit --evm-only   # Apenas EVM
+python3 ecosystem.py audit --sol-only   # Apenas Solana
+```
+
+Requer `ARBISCAN_API_KEY` no `.env` (gratuita em arbiscan.io).
+
+## Opportunity Scoring
+
+Protocols are ranked using a quantitative algorithm based on:
+
+- **TVL (Total Value Locked)**: Baseline for protocol significance.
+- **Growth Rate**: Velocity of capital inflow.
+- **Airdrop Probability**: Heuristics based on funding and tokenomics.
+- **Historical Reward Signal**: Analysis of similar protocol rewards.
+
+Higher scores are prioritized by the farm engine to optimize capital efficiency.
+
+## Security
+
+All secrets are loaded from environment variables. **Never commit private keys or wallet files to the repository.**
+
+Required environment variables:
+```env
+ARBITRUM_RPC_URL=
+ETH_RPC_URL=
+BSC_RPC_URL=
+SOLANA_RPC_URL=
+ARBISCAN_API_KEY=
+PRIVATE_KEY=
+SOLANA_PRIVATE_KEY=
+GALXE_API_KEY=
+```
+
+## Estrutura
+
+```
+src/
+├── adapters/
+│   ├── __init__.py              # Mapa de endereços de tokens
+│   ├── uniswap.py               # Uniswap V3 (real + dry-run)
+│   ├── sushi.py                 # SushiSwap (real + dry-run)
+│   ├── aave.py                  # Aave V3 (real + dry-run)
+│   ├── compound.py              # Compound V3 (real + dry-run)
+│   ├── curve.py                 # Curve 3Pool (real + dry-run)
+│   ├── lido.py                  # Lido stake/wrap (real + dry-run)
+│   └── solana/
+│       ├── real_base.py         # Solana RPC base
+│       ├── solana_real.py       # Solana helpers
+│       ├── fragmetric_real.py   # Fragmetric staking
+│       ├── jito_real.py         # Jito staking
+│       ├── jupiter_real.py      # Jupiter swaps
+│       ├── kamino_real.py       # Kamino lending
+│       ├── marinade_real.py     # Marinade staking
+│       ├── meteora_real.py      # Meteora DLMM
+│       ├── raydium_real.py      # Raydium swaps/LP
+│       └── sanctum_real.py      # Sanctum staking
+├── audit/
+│   └── footprint.py             # FootprintAuditor (Arbiscan + Solana)
+├── bridge/
+│   └── lifi_bridge.py           # Cross-chain bridge via LI.FI
+├── quests/
+│   ├── galxe.py                 # Cliente GraphQL Galxe + scan persistente
+│   ├── testnet_farm.py          # Farm automatizado (Sepolia, Hoodi, Amoy)
+│   ├── faucet.py                # Guia de faucets
+│   └── pow_miner.py             # Minerador PoW
+├── utils/
+│   └── db_manager.py            # Persistência SQLite
+├── arbitrum_real.py             # Transações reais na Arbitrum
+├── dashboard.py                 # Painel de controle terminal
+├── discovery.py                 # Scanner DeFiLlama
+├── scoring.py                   # Pontuação de protocolos
+├── execution.py                 # Gerenciamento de execução
+└── models.py                    # Modelos compartilhados (SwapResult, etc.)
+
+ecosystem.py                     # CLI principal
+quest_farm.py                    # Orquestrador de quests on-chain
+solana_daily_farm.py             # Farm Solana diário
+solana_weekly_farm.py            # Farm Solana semanal
+scripts/
+├── stress_test_dryrun.py        # Stress test all adapters
+└── run_audit.py                 # Script de auditoria standalone
+reports/                         # Relatórios de teste
+logs/                            # Logs de execução
+```
+
+## Requisitos
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Step 1: Run the Demo
-```bash
-python3 demo.py
-```
+## Support the Project
 
-### Step 2: View the Dashboard
-```bash
-streamlit run src/dashboard.py
-```
+If this project saves you time, helps you farm airdrops, or inspires your own work, consider supporting its continued development.
 
-### Step 3: Explore the Database
-```bash
-# Check logged transactions
-sqlite3 airdrop_bot.db "SELECT * FROM transactions;"
+**Channels:**
+- USDC (Arbitrum): `0x50C905a210E5585B0F0124a0B53195f7Eb3d994C`
+- ETH (Arbitrum): `0x50C905a210E5585B0F0124a0B53195f7Eb3d994C`
+- SOL (Solana): `<solana_address>`
 
-# View discovered protocols  
-sqlite3 airdrop_bot.db "SELECT * FROM signals;"
-```
+Every contribution helps fund:
+- RPC infrastructure
+- Testnet experimentation
+- New protocol integrations
+- Development time
 
-## Framework Components
+Thank you for your support.
 
-### 1. Discovery (`src/discovery.py`)
-Scans external sources for airdrop opportunities:
-- **DeFiLlama API**: Protocol TVL and metrics
-- **Chain Inference**: Automatically detects target chains
+## Disclaimer
 
-**Features**:
-- Real-time data collection
-- CEX filtering (focuses on DEXs)
-- Chain preference (Arbitrum for farming)
+This software interacts with public blockchains and may spend real assets.
 
-### 2. Scoring (`src/scoring.py`)
-Evaluates protocol potential using quantitative models:
-- **TVL Scoring**: Logarithmic weight (up to 30 points)
-- **Growth Metrics**: 7-day TVL growth (up to 40 points)
-- **Funding Analysis**: Round size heuristics (up to 20 points)
-- **Advanced Risk Scoring**: `risk_score()` returns 0-100 (higher = riskier) using protocol age, audit count, TVL volatility, and chain concentration. Protocols with `risk_score > 70` are flagged `HIGH_RISK` and skipped.
+Users are solely responsible for:
+- private key management
+- gas costs
+- protocol risks
+- compliance with local regulations
 
-**Algorithm**: 0-100 opportunity scores + 0-100 risk scores. Only protocols with score ≥ 30 and risk ≤ 70 are executed.
-
-### 3. Execution (`src/execution.py`)
-Handles on-chain operations with safety:
-- **Secure Wallet Manager**: Keystore-encrypted wallets with multi-wallet support (round-robin, least-used strategies)
-- **GasOptimizer**: EIP-1559-aware gas pricing with legacy fallback
-- **Protocol Adapters**: 
-  - Uniswap V3: Smart swaps with path optimization
-  - Aave: Liquidity provision with risk management
-  - Compound V3: Supply USDC, withdraw, claim COMP rewards
-  - Curve Finance: Add/remove 3pool liquidity (DAI/USDC/USDT)
-  - SushiSwap: Token swap via Router02 on Arbitrum and Ethereum
-  - Lido: Stake ETH → stETH, wrap to wstETH
-- **Anti-Det. Simulation**: Human-like behavior patterns
-
-### 4. Persistence (`src/utils/db_manager.py`)
-Maintains activity history:
-- **SQLite Database**: `airdrop_bot.db`
-- **Tables**: `signals` (discovered opportunities), `transactions` (executed tasks)
-- **Status Tracking**: pending/executed/ignored/error states
-
-### 5. API Integration (`src/utils/api_client.py`)
-Connects to external AI services:
-- **z.ai Client**: Strategy generation and analysis
-- **Fallback Engine**: Local decision making when API is unavailable
-
-### 6. Dashboard (`src/dashboard.py`)
-Real-time monitoring interface:
-- **Metrics Panel**: Overview of discovered protocols and execution status
-- **Protocol List**: Detailed view of all opportunities with scores
-- **Transaction Log**: Complete history of executed trades
-- **Visualizations**: Charts and graphs for trend analysis
-- **Backtesting Tab**: Strategy simulation and comparison
-- **Wallets Tab**: Per-wallet activity breakdown
-- **Analytics Tab**: Historical performance, chain success rates, protocol ROI
-
-### 7. Notifications (`src/notifications.py`)
-Sends real-time alerts via Telegram and Discord:
-- **NEW_OPPORTUNITY**: When a protocol is discovered and scored
-- **EXECUTION_SUCCESS**: When a strategy completes
-- **EXECUTION_FAILED**: When an error occurs during execution
-- **HIGH_RISK_SKIPPED**: When a protocol is skipped due to high risk score
-
-### 8. Backtesting (`src/backtesting.py`)
-Simulates and compares strategies using historical database data:
-- **Backtester**: Runs historical replay, simulates hypothetical configs
-- **Strategy Comparison**: Side-by-side metrics across thresholds/chains/actions
-- **Results**: Signals executed, avg score, estimated transactions, chain distribution
-
-### 9. Analytics (`src/analytics.py`)
-Historical performance analysis engine:
-- **Protocol ROI**: Estimated return based on gas costs vs. airdrop value
-- **Chain Performance**: Success rates by chain
-- **Execution Summary**: Period-over-period status counts, gas estimates in USD
-
-### 10. Multi-Wallet (`src/multi_wallet.py`)
-Parallel farming across multiple wallets:
-- **Mirror Mode**: Every wallet executes the full strategy
-- **Split Mode**: Each wallet gets one action (round-robin)
-- **Randomized Mode**: Shuffled action distribution per wallet
-- **Concurrency Control**: Semaphore-limited parallel execution with human-like delays
-
-## Configuration
-
-### Environment Variables
-```bash
-# Optional: z.ai API key (for enhanced AI decisions)
-export ZAI_API_KEY="your-api-key-here"
-
-# Notifications (optional — skip if not needed)
-export TELEGRAM_BOT_TOKEN="your-bot-token"
-export TELEGRAM_CHAT_ID="your-chat-id"
-export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
-```
-
-### RPC Endpoints (Free)
-The framework uses free public RPC endpoints:
-- **Ethereum**: https://eth.llamarpc.com
-- **Arbitrum**: https://arb1.arbitrum.io/rpc
-- **Base**: https://mainnet.base.org
-
-## Security Considerations
-
-### Best Practices
-1. **Wallet Isolation**: Never mix farming with personal holdings
-2. **Encrypted Storage**: All private keys use Keystore with AES-256
-3. **Transaction Simulation**: Always simulate before signing
-4. **Gas Optimization**: Use EIP-1559 where supported
-
-### Risk Management
-- **Slippage Control**: Limit max slippage percentage
-- **Gas Optimization**: Dynamic gas price estimation
-- **Amount Limits**: Set per-transaction caps
-- **Monitor Balance**: Alert on low balance conditions
-
-## Production Deployment
-
-### Docker Setup
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY src/ ./src/
-
-CMD ["python3", "demo.py"]
-```
-
-### Docker Compose
-```yaml
-services:
-  app:
-    build: .
-    volumes:
-      - ./data:/app/data
-    ports:
-      - "8501:8501"
-    environment:
-      - PYTHONUNBUFFERED=1
-```
-
-## Customization
-
-### Add New Protocols
-1. **Discovery**: Extend `OpportunityScanner` with new data sources
-2. **Adapters**: Implement `ProtocolAdapter` for new DeFi protocols
-3. **Scoring**: Add new features to `AirdropPredictor`
-
-### Adjust Strategy
-- **Score Threshold**: Modify `if score >= 30:` in orchestrator
-- **Execution Strategy**: Customize the strategy generation in `demo.py`
-- **Gas Settings**: Adjust `gas` and `gasPrice` in adapters
-
-## Monitoring & Maintenance
-
-### Log Files
-- **Execution Logs**: Console output during runs
-- **Transaction History**: Full audit trail in SQLite
-- **Dashboard**: Real-time web interface
-
-### Health Checks
-```bash
-# Check if orchestrator is running
-pgrep -f "orchestrator_final.py"
-
-# Monitor database size
-du -h airdrop_bot.db
-
-# Check for errors in logs
-grep "ERROR" orchestrator.log
-```
-
-## Technical Details
-
-### Data Flow
-1. **Discovery** → **Scoring** → **Persistence** → **Execution**
-2. **Execution** → **Persistence** (transactions)
-3. **Dashboard** ← **Persistence** (read-only)
-
-### Async Design
-- **Synchronous Adapters**: Prevent event loop hangs
-- **Async Orchestrator**: Coordinate component execution
-- **Thread Pool**: Handle blocking I/O operations
-
-### Error Handling
-- **Graceful Degradation**: Continue on component failures
-- **Retry Logic**: Automatic retry for transient errors
-- **Fallback Strategies**: Local decision making when APIs are unavailable
-
-## Future Enhancements
-
-### Phase 1 (Short Term)
-- [x] Core framework working
-- [ ] Add more DeFi protocols (Compound, Curve, Sushiswap)
-- [ ] Implement advanced risk scoring
-- [ ] Add notification system (Telegram/Discord)
-
-### Phase 2 (Medium Term)
-- [ ] Real-time execution with gas optimization
-- [ ] Multi-wallet management
-- [ ] Historical performance analysis
-- [ ] Automated rebalancing strategies
-
-### Phase 3 (Long Term)
-- [ ] Decentralized orchestration
-- [ ] Cross-chain arbitrage detection
-- [ ] ML-powered opportunity prediction
-- [ ] Adaptive risk management
-
-## License
-
-This framework is provided for educational and research purposes. Use at your own risk in compliance with applicable laws and regulations.
-
-## Support
-
-For issues, questions, or contributions:
-- **GitHub Issues**: Report bugs and request features
-- **Discussions**: Share experiences and best practices
-- **Issues**: Technical support and troubleshooting
-
----
-
-**Version**: 1.0
-**Status**: ✅ DEMO READY
-**Last Updated**: $(date)
+**Use at your own risk.**

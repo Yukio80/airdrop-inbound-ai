@@ -1,0 +1,9 @@
+{
+  "address": "58qeb4LKk2GYx7yhPyADX6PvEPK7QiXJdr9nQbKSvRtU",
+  "label": "user_main",
+  "chain": "solana",
+  "created_at": "2026-06-19",
+  "encrypted": false,
+  "public_key": true,
+  "note": "Carteira real do usuário — apenas modo simulação (sem private key)"
+}

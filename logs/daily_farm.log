@@ -1,0 +1,221 @@
+2026-06-19 15:59:05,929 [INFO] 
+==================================================
+2026-06-19 15:59:05,929 [INFO] 🌅 Daily Farm — Sexta-feira
+2026-06-19 15:59:05,930 [INFO] ==================================================
+2026-06-19 15:59:07,964 [INFO] 🔄 Swap diário Jupiter
+2026-06-19 15:59:10,043 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:10,253 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:11,478 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:11,486 [INFO]    ✅ Jupiter swap: 4j8sU2bjh17Wwx8UWBJXpehSsHbFKWDDaPX9ZwUz7AV3rds3EinYnVXSjqFLDmojUbWvWMMTPfdvYyAL6KcRdkXv
+2026-06-19 15:59:11,489 [INFO] 📋 Protocolo do dia: Raydium — LP USDC/SOL
+2026-06-19 15:59:12,248 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:12,480 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:13,113 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:14,326 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 15:59:14,330 [INFO]    ✅ Raydium add_liquidity: 347iBPZRr3avYwLjS71zYn6hF8SadfmCvbNsZcM5TaBBTNwvkVsgGTKgctmPf75dB24pKPZRUYDAtMckQwYBeqVg
+2026-06-19 15:59:14,444 [INFO] 📊 Dia Sexta concluído
+2026-06-19 15:59:14,444 [INFO] ==================================================
+
+2026-06-19 16:02:05,745 [INFO] 
+==================================================
+2026-06-19 16:02:05,746 [INFO] 🌅 Daily Farm — Sexta-feira
+2026-06-19 16:02:05,746 [INFO] ==================================================
+2026-06-19 16:02:07,856 [INFO] 🔄 Swap diário Jupiter
+2026-06-19 16:02:09,537 [INFO]    ✅ Jupiter swap: 8839adbdc2ab54f49813c98444e290fc9ba52dbcf29f0ea03c050aaa8ce08f91
+2026-06-19 16:02:09,540 [INFO] 📋 Protocolo do dia: Raydium — LP USDC/SOL
+2026-06-19 16:02:10,473 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:10,677 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:10,893 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:12,112 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:12,116 [INFO]    ✅ Raydium add_liquidity: 5HVnNnSggffxPU4h3qAAZwpkHr65qTovtkz96SRVWH4a5ekuF9HWv8myCbALHW3Hood3B2xi4EBm7E1azB3vMSDc
+2026-06-19 16:02:12,234 [INFO] 📊 Dia Sexta concluído
+2026-06-19 16:02:12,235 [INFO] ==================================================
+
+2026-06-19 16:02:25,034 [INFO] 
+==================================================
+2026-06-19 16:02:25,034 [INFO] 🌅 Daily Farm — Sexta-feira
+2026-06-19 16:02:25,034 [INFO] ==================================================
+2026-06-19 16:02:26,824 [INFO] 🔄 Swap diário Jupiter
+2026-06-19 16:02:28,850 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:29,166 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:30,369 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:30,383 [INFO]    ✅ Jupiter swap: 5DN5FKRahgrextj6Hc7XWSwwFEkmm6iz9iVyYvC61CyzAUG7o9jUq4ZbDwFuv2rymjYVHoK8SXSXDd2H2XNfsTEa
+2026-06-19 16:02:30,386 [INFO] 📋 Protocolo do dia: Raydium — LP USDC/SOL
+2026-06-19 16:02:31,582 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:31,784 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:32,083 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:33,378 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-19 16:02:33,380 [INFO]    ✅ Raydium add_liquidity: 3AN7vfm3ebK99o1J1rRPnpTDAqeQX6wPLHaG65Danc1xJepNTM9MqDYLFhmsMUQ1Q8QNro4zodHULcd1Rj2TuvCr
+2026-06-19 16:02:33,527 [INFO] 📊 Dia Sexta concluído
+2026-06-19 16:02:33,527 [INFO] ==================================================
+
+2026-06-20 10:56:49,868 [INFO] 
+==================================================
+2026-06-20 10:56:49,869 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 10:56:49,869 [INFO] ==================================================
+2026-06-20 10:57:16,886 [INFO] 
+==================================================
+2026-06-20 10:57:16,886 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 10:57:16,887 [INFO] ==================================================
+2026-06-20 10:57:18,243 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 10:57:19,725 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:31,860 [INFO] 
+==================================================
+2026-06-20 10:57:31,860 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 10:57:31,860 [INFO] ==================================================
+2026-06-20 10:57:32,728 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 10:57:33,768 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:55,507 [INFO] 
+==================================================
+2026-06-20 10:57:55,508 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 10:57:55,508 [INFO] ==================================================
+2026-06-20 10:57:56,593 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 10:57:57,683 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:57,826 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:57,836 [INFO]    ✅ Proof-of-activity: 5kN2tYgXPMAAZBUs87vaD1wJsDVMJb8QPoRNa7e9ihcJJtZrgtQZTGXHWnT36JoGVghMFQKe29aHrAVVbcDEbCPg
+2026-06-20 10:57:57,837 [INFO] 📋 Protocolo do dia: Raydium — Farm LP
+2026-06-20 10:57:58,481 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:58,622 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:58,755 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:59,897 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:57:59,906 [INFO]    ✅ Raydium farm: 2UXogwLNe7jQVy8kcxXrapjt2Xmzf1WnLjGRXBHVXf68iK3Jtbkmi4ugPPd5jKitzsG1go53xfGAzJrQXN19F3kG
+2026-06-20 10:58:00,059 [INFO] 📊 Dia Sábado concluído
+2026-06-20 10:58:00,060 [INFO] ==================================================
+
+2026-06-20 11:05:04,058 [INFO] 
+==================================================
+2026-06-20 11:05:04,059 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 11:05:04,060 [INFO] ==================================================
+2026-06-20 11:05:05,328 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 11:05:06,761 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:06,987 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:06,991 [INFO]    ✅ Proof-of-activity: 5ZarWA5TZtQzAzoREUoSPqxkWjV9nqRCV4Zg6TZRiLatrkaKHFTxRJGbokWzY8yQpjqNN2YcjqaGAfKTCsVfSNQJ
+2026-06-20 11:05:06,992 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 11:05:07,686 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:07,823 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:07,958 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:09,097 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 11:05:09,104 [INFO]    ✅ Fragmetric stake: 47K93euLGL7Ape8i9ZY9DtnHZJ6ffrAnkAWKU4xEVm6iR7MYTC1ogrNpNRuv8exrB5GoxFL7EgmpRMUg49yKqNgW
+2026-06-20 11:05:09,236 [INFO] 📊 Dia Sábado concluído
+2026-06-20 11:05:09,236 [INFO] ==================================================
+
+2026-06-20 12:37:13,518 [INFO] 
+==================================================
+2026-06-20 12:37:13,519 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 12:37:13,520 [INFO] ==================================================
+2026-06-20 12:37:14,600 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 12:37:15,801 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:15,940 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:15,945 [INFO]    ✅ Proof-of-activity: 4gCVmCCax6YrCBf4pJJBdxpvVRLrWPeioAa2GUgqNzySFvPRxEoeiLEWotaG4tiq4VsqmqjoSD6djcu1iRPL1XVB
+2026-06-20 12:37:15,945 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 12:37:16,648 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:16,787 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:16,928 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:18,066 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 12:37:18,073 [INFO]    ✅ Fragmetric stake: 5iTs5QtygrbDGCkKoPXyewYbYgtsAwMcEXbTyDjg6eKDndSNgM61KmgaP89DcHEzL5jUxrZPdPHrzWeoF4BodQdZ
+2026-06-20 12:37:18,305 [INFO] 📊 Dia Sábado concluído
+2026-06-20 12:37:18,305 [INFO] ==================================================
+
+2026-06-20 10:39:01,100 [INFO] 
+==================================================
+2026-06-20 10:39:01,100 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 10:39:01,101 [INFO] ==================================================
+2026-06-20 10:39:01,998 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 10:39:02,907 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:03,054 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:03,058 [INFO]    ✅ Proof-of-activity: 4VKWX9JR2L2kaHebsS1V2FbkzssEQKroD8zEoeZBbGGAK6hcZXFEq96dRex9EKa9bwVCbZpC1W2y5UwrueUWo3Rq
+2026-06-20 10:39:03,059 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 10:39:03,679 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:03,820 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:03,953 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:05,088 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 10:39:05,094 [INFO]    ✅ Fragmetric stake: 5SqEhvzqLfWp4RhngZKy1hQqG9n5xKu5WV3AkmcRkRRi3Jh1eHiMzUqzydL743zM5FKjGFjyLuqvsFFYMNUrepsU
+2026-06-20 10:39:05,244 [INFO] 📊 Dia Sábado concluído
+2026-06-20 10:39:05,244 [INFO] ==================================================
+
+2026-06-20 14:31:25,231 [INFO] 
+==================================================
+2026-06-20 14:31:25,233 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 14:31:25,233 [INFO] ==================================================
+2026-06-20 14:31:26,606 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 14:31:27,982 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:28,160 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:28,164 [INFO]    ✅ Proof-of-activity: zTbnN3upoW21r887h8Rj1fgmmPYLdwe11DMbubEBFk1xyTEnnm6Zpqt9aMU2JB4YKwHtjhU1daT9fAPJYak5WpP
+2026-06-20 14:31:28,164 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 14:31:28,773 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:28,905 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:29,036 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:30,201 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:31,342 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 14:31:31,351 [INFO]    ✅ Fragmetric stake: 4HQkHAh1vxNaj8xAmnFBmSj3bPfhuV4ctJPAeaJs8TFmLFfd4bcYfThskn6Dwnv45eDCanwEN1MNtxozzZbFYqX3
+2026-06-20 14:31:31,670 [INFO] 📊 Dia Sábado concluído
+2026-06-20 14:31:31,671 [INFO] ==================================================
+
+2026-06-20 15:05:34,086 [INFO] 
+==================================================
+2026-06-20 15:05:34,091 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 15:05:34,092 [INFO] ==================================================
+2026-06-20 15:05:35,606 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 15:05:37,123 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:37,369 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:37,374 [INFO]    ✅ Proof-of-activity: 51ZKjRzjp52agUSSFvshiXZ1toJxN1Ao2QewN7NitWGFirJM8Y6Fu8Ec1ZpH3gpkLKZWLxkzrusmMyNfyB5rUsfW
+2026-06-20 15:05:37,375 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 15:05:38,253 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:38,452 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:38,651 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:39,857 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:05:39,868 [INFO]    ✅ Fragmetric stake: 2HLXLjjkUXhzRG4gX29wSwzv97rqQwqAVeS7d4H6JwBKV1gAgScPmcnVX8P2grjoUNpXE5zpkh1BGeVWTLBkLxxs
+2026-06-20 15:05:40,121 [INFO] 📊 Dia Sábado concluído
+2026-06-20 15:05:40,122 [INFO] ==================================================
+
+2026-06-20 15:09:42,260 [INFO] 
+==================================================
+2026-06-20 15:09:42,261 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 15:09:42,262 [INFO] ==================================================
+2026-06-20 15:09:43,980 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 15:09:45,768 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:45,995 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:45,998 [INFO]    ✅ Proof-of-activity: 422LhesFE3U75mmV2i7sGtZ9eYkpBCwuVBoxaekLWEs63A6dyFGUgiVvaugNKh3GKQGk32MX25kk6mHdY1d2SJjg
+2026-06-20 15:09:45,999 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 15:09:47,169 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:47,372 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:47,584 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:48,803 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:09:48,808 [INFO]    ✅ Fragmetric stake: 3fBiphsJfHGvHk6zYFoyQuYWFpuEA4KnRJ6NVthYum2LYmiCL6LMhJWaUUruVTqKUex9Hdt2epPqWk1XoHR3NXG8
+2026-06-20 15:09:49,079 [INFO] 📊 Dia Sábado concluído
+2026-06-20 15:09:49,081 [INFO] ==================================================
+
+2026-06-20 15:43:32,882 [INFO] 
+==================================================
+2026-06-20 15:43:32,884 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 15:43:32,884 [INFO] ==================================================
+2026-06-20 15:43:34,767 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 15:43:36,578 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:36,807 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:36,812 [INFO]    ✅ Proof-of-activity: 27TNdRxiSmQoKdFkQZ5cZdMxjw6jMK4jFLkeP8wihKbmebjkKgwWYrNZxnacrgoq2z9rHkSZdfzER7QsW6tVvjGS
+2026-06-20 15:43:36,813 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 15:43:37,764 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:37,973 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:38,172 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:39,444 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 15:43:39,451 [INFO]    ✅ Fragmetric stake: 8vWx9UwqBi7NPZrA6xcCf9ZrZPw2Q8YhXngci5D7sLSx9wfJPL92x3Pk3mFieZ5NoJiV81ZiduqHicfSPSx48Vr
+2026-06-20 15:43:39,598 [INFO] 📊 Dia Sábado concluído
+2026-06-20 15:43:39,599 [INFO] ==================================================
+
+2026-06-20 18:03:43,366 [INFO] 
+==================================================
+2026-06-20 18:03:43,368 [INFO] 🌅 Daily Farm — Sábado-feira
+2026-06-20 18:03:43,368 [INFO] ==================================================
+2026-06-20 18:03:45,586 [INFO] 🔄 Proof-of-activity diário
+2026-06-20 18:03:47,191 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:47,367 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:47,371 [INFO]    ✅ Proof-of-activity: DDSextBmqHwrYtQmtPA1CCux3EEh5KbyKtEjjnTZqtcebKspDyXo1LhuihuNzcH53DmQ6jgtw8kjkjxvdicmLvb
+2026-06-20 18:03:47,372 [INFO] 📋 Protocolo do dia: Fragmetric — Restake SOL→fragSOL
+2026-06-20 18:03:48,088 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:48,242 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:48,472 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:49,632 [INFO] HTTP Request: POST https://api.mainnet-beta.solana.com "HTTP/1.1 200 OK"
+2026-06-20 18:03:49,639 [INFO]    ✅ Fragmetric stake: 3k29KdvVrkgf8rHB9fnumAUgNFtWjh3KWSUxcMffedA3pm7mPwQ4h7nnWkTsS1TLE6ydzusCpWScUYYwnQ77SckQ
+2026-06-20 18:03:49,882 [INFO] 📊 Dia Sábado concluído
+2026-06-20 18:03:49,883 [INFO] ==================================================
+
