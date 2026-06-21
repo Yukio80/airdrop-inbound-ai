@@ -9,3 +9,6 @@ httpx
 solana
 solders
 base58
+fastapi>=0.110.0
+uvicorn>=0.29.0
+pyyaml>=6.0

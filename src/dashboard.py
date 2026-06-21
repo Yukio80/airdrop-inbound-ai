@@ -41,6 +41,9 @@ def _sol_addr():
     try:
         with open(SOL_KEYSTORE) as f:
             d = json.load(f)
+        if isinstance(d, list):
+            from solders.keypair import Keypair
+            return str(Keypair.from_bytes(bytes(d)).pubkey())
         return d.get("public_key") or d.get("address")
     except Exception:
         return None
@@ -124,11 +127,11 @@ def _get_integrity_report():
         cut_30d = (now - dt.timedelta(days=30)).isoformat()
 
         rows_7d = cursor.execute(
-            "SELECT tx_hash, protocol, status FROM transactions WHERE timestamp >= ?",
+            "SELECT tx_hash, protocol FROM transactions WHERE timestamp >= ?",
             (cut_7d,)
         ).fetchall()
         rows_30d = cursor.execute(
-            "SELECT tx_hash, protocol, status FROM transactions WHERE timestamp >= ?",
+            "SELECT tx_hash, protocol FROM transactions WHERE timestamp >= ?",
             (cut_30d,)
         ).fetchall()
 
@@ -298,8 +301,80 @@ def show_dashboard():
     except Exception as e:
         print(f"  ⚠️  {e}")
 
+    # Yield Optimizer
+    print("\n 💰 YIELD OPTIMIZER")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        from yield_optimizer.apy_feed import APYFeed
+        rates = APYFeed().get_all_rates()
+        best_usdc = [r for r in rates if r["asset"] == "USDC"]
+        best_sol = [r for r in rates if r["asset"] == "SOL"]
+        best_usdc_rate = max(best_usdc, key=lambda r: r["apy_pct"]) if best_usdc else None
+        best_sol_rate = max(best_sol, key=lambda r: r["apy_pct"]) if best_sol else None
+        best_eth = [r for r in rates if r["asset"] == "ETH"]
+        best_eth_rate = max(best_eth, key=lambda r: r["apy_pct"]) if best_eth else None
+        print(f"  Best USDC rate:  {best_usdc_rate['apy_pct']:.2f}% at {best_usdc_rate['protocol']} ({best_usdc_rate['chain']})" if best_usdc_rate else "  Best USDC rate:  n/a")
+        print(f"  Best SOL rate:   {best_sol_rate['apy_pct']:.2f}% at {best_sol_rate['protocol']} ({best_sol_rate['chain']})" if best_sol_rate else "  Best SOL rate:   n/a")
+        print(f"  Best ETH rate:   {best_eth_rate['apy_pct']:.2f}% at {best_eth_rate['protocol']} ({best_eth_rate['chain']})" if best_eth_rate else "  Best ETH rate:   n/a")
+        print()
+        print(f"  {'Protocol':<16} {'Chain':<12} {'Asset':<8} {'APY':>7} {'TVL':>12}")
+        print(f"  {'─' * 57}")
+        for r in rates[:8]:
+            tvl = f"${r['tvl_usd']:,.0f}" if r['tvl_usd'] else "—"
+            print(f"  {r['protocol']:<16} {r['chain']:<12} {r['asset']:<8} {r['apy_pct']:>6.2f}% {tvl:>12}")
+        # Last yield rebalance
+        try:
+            conn = sqlite3.connect(str(DB))
+            row = conn.execute(
+                "SELECT timestamp, protocol, action, tx_hash FROM transactions WHERE action LIKE 'yield_%' ORDER BY timestamp DESC LIMIT 1"
+            ).fetchone()
+            conn.close()
+            if row:
+                print(f"\n  Last yield action: {row[1]} {row[2]} @ {row[0][:19]}")
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"  ⚠️  {e}")
+
+    # LayerZero Status
+    print("\n 🌉 LAYERZERO STATUS")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        from src.bridge.lz_cadencer import LZCadencer
+        lz = LZCadencer()
+        stats = lz.get_stats()
+        should, reason = lz.should_bridge_today()
+        print(f"  Total bridges:   {stats['total_bridges']:>4}   Tier: {stats['estimated_tier'].upper():<10}")
+        print(f"  Unique days:     {stats['unique_days']:>4}   Volume: ${stats['total_volume_usdc']:.2f} USDC")
+        # Next route is internal to get_next_route, we'll call it once
+        next_route = lz.get_next_route()
+        print(f"  Next route:      {next_route['from']} → {next_route['to']}")
+        print(f"  Status:          {'✅ ready' if should else f'⏸ {reason}'}")
+    except Exception as e:
+        print(f"  ⚠️  {e}")
+
+    # Gas Health
+    print("\n 💧 GAS HEALTH")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        w3 = Web3(Web3.HTTPProvider(EVM_RPCS["Arbitrum"][0], request_kwargs={"timeout": 8}))
+        if w3.is_connected():
+            bal = w3.eth.get_balance(EVM_ADDR) / 1e18
+            min_gas = 0.005
+            pct = (bal / min_gas) * 100 if min_gas > 0 else 0
+            if bal >= min_gas:
+                print(f"  Arbitrum ETH:       {bal:.6f}   ✅ acima de {min_gas} ETH")
+            elif bal > 0:
+                print(f"  Arbitrum ETH:       {bal:.6f}   ⚠️  {pct:.0f}% do mínimo ({min_gas} ETH)")
+            else:
+                print(f"  Arbitrum ETH:       0.000000   🔴 deposite fundos imediatamente!")
+            print(f"  Threshold mínimo:   {min_gas} ETH para automação")
+        else:
+            print(f"  Arbitrum ETH:       ⚠️  erro de conexão")
+    except Exception as e:
+        print(f"  Arbitrum ETH:       ⚠️  {e}")
+
     # Integrity
-    print("\n 🛡️  EXECUTION INTEGRITY")
     print(" ──────────────────────────────────────────────────────")
     report = _get_integrity_report()
     if "error" in report:
@@ -316,6 +391,27 @@ def show_dashboard():
     
     cr = _cron_status()
     print(f"\n  Cron diário:           {cr}")
+
+    # State
+    print("\n 📦 BOT STATE")
+    print(" ──────────────────────────────────────────────────────")
+    try:
+        from src.hardening.state_machine import StateMachine
+        sm = StateMachine()
+        data = sm._data
+        steps = data.get("completed_steps", [])
+        print(f"  Cycle:     #{data.get('cycle_count', 0)} ({data.get('cycle_date', '—')})")
+        print(f"  Last run:  {(data.get('last_run') or '—')[:19]}")
+        print(f"  Steps:     {', '.join(steps) if steps else 'none'}")
+        proto_fails = sum(
+            1 for ps in data.get("protocol_states", {}).values()
+            if ps.get("failures", 0) >= 3
+        )
+        if proto_fails > 0:
+            print(f"  ⚠️  {proto_fails} protocol(s) with 3+ consecutive failures")
+    except Exception as e:
+        print(f"  ⚠️  {e}")
+
     print()
     print(f"  💡 Dica: Rode  python3 ecosystem.py all  para ciclo completo")
     print()

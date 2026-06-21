@@ -19,7 +19,7 @@ class GalxeClient:
     def active_campaigns(self, first=200):
         q = "{ campaigns(input: {first: %d}) { list { id name status } totalCount } }" % first
         data = self._query(q)
-        camps = data.get("data", {}).get("campaigns")
+        camps = (data.get("data") or {}).get("campaigns")
         if not camps:
             return []
         return camps.get("list", [])
@@ -43,7 +43,7 @@ class GalxeClient:
             # Detailed query for tasks
             q = '{ campaign(id: "%s") { id name tasks { id type title contractAddress calldata } } }' % cid
             res = self._query(q)
-            camp = res.get("data", {}).get("campaign")
+            camp = (res.get("data") or {}).get("campaign")
             if not camp: continue
             
             for t in camp.get("tasks", []):
@@ -94,7 +94,7 @@ class GalxeClient:
             cid = c["id"]
             try:
                 elig = self.check_eligibility(cid, address)
-                camp = elig.get("data", {}).get("campaign")
+                camp = (elig.get("data") or {}).get("campaign")
                 groups = camp.get("credentialGroups", []) if camp else []
 
                 if not groups:

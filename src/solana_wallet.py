@@ -24,18 +24,13 @@ class SolanaWalletManager:
 
     def create_wallet(self, name: str) -> tuple:
         keypair = Keypair()
-        wallet_data = {
-            "secret_key": base58.b58encode(bytes(keypair)).decode(),
-            "public_key": str(keypair.pubkey()),
-        }
         filepath = self.keystore_path / f"{name}.sol.json"
         with open(filepath, "w") as f:
-            json.dump(wallet_data, f)
+            json.dump(list(bytes(keypair)), f)
         return keypair.pubkey(), keypair
 
     def load_wallet(self, name: str):
-        """Load wallet. Supports both keypair (with secret_key) and pubkey-only."""
-        # Try .sol.json first (keypair), then .json (pubkey-only)
+        """Load wallet. Supports keypair array (CLI format), Base58 dict, and pubkey-only."""
         filepath = self.keystore_path / f"{name}.sol.json"
         if not filepath.exists():
             filepath = self.keystore_path / f"{name}.json"
@@ -45,11 +40,13 @@ class SolanaWalletManager:
         with open(filepath) as f:
             data = json.load(f)
 
+        if isinstance(data, list):
+            return Keypair.from_bytes(bytes(data))
+
         if "secret_key" in data:
             secret_bytes = base58.b58decode(data["secret_key"])
             return Keypair.from_bytes(secret_bytes)
 
-        # Pubkey-only wallet (read-only simulation)
         addr = data.get("address") or data.get("public_key")
         if not addr:
             raise ValueError(f"No address found in {filepath}")

@@ -5,3 +5,8 @@ __pycache__/
 airdrop_bot.db
 dashboard.log
 AI/
+logs/
+reports/
+state/
+wallets/*.sol.json
+wallets/*.json

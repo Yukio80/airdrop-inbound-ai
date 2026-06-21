@@ -1,10 +1,13 @@
 """
 Testnet Farm — automate faucet claims + testnet interactions.
 Zero-cost airdrop farming on Sepolia, Holesky, Amoy, etc.
+Hardened with RPC retry logic.
 """
 import json, time, random
 from web3 import Web3
 from eth_account.account import Account
+from web3.exceptions import TimeExhausted
+from src.hardening.retry import retry
 
 TESTNETS = {
     "sepolia": {
@@ -46,6 +49,32 @@ TESTNETS = {
         "explorer": "https://amoy.polygonscan.com",
         "native": "POL",
     },
+    "base_sepolia": {
+        "rpc": "https://sepolia.base.org",
+        "rpc_fallback": "",
+        "chain_id": 84532,
+        "faucet": "https://faucet.quicknode.com/base/sepolia",
+        "faucets": [
+            ("QuickNode (tweet)", "https://faucet.quicknode.com/base/sepolia"),
+            ("Coinbase (login)", "https://www.coinbase.com/faucets/base-sepolia-faucet"),
+            ("Alchemy (login)", "https://www.alchemy.com/faucets/base-sepolia"),
+        ],
+        "explorer": "https://sepolia.basescan.org",
+        "native": "ETH",
+    },
+    "optimism_sepolia": {
+        "rpc": "https://sepolia.optimism.io",
+        "rpc_fallback": "",
+        "chain_id": 11155420,
+        "faucet": "https://faucet.quicknode.com/optimism/sepolia",
+        "faucets": [
+            ("QuickNode (tweet)", "https://faucet.quicknode.com/optimism/sepolia"),
+            ("Alchemy (login)", "https://www.alchemy.com/faucets/optimism-sepolia"),
+            ("Coinbase (login)", "https://www.coinbase.com/faucets/optimism-sepolia-faucet"),
+        ],
+        "explorer": "https://sepolia-optimism.etherscan.io",
+        "native": "ETH",
+    },
 }
 
 ERC20_ABI = json.loads('''[
@@ -64,13 +93,14 @@ class TestnetFarm:
         else:
             self.acct = None
 
+    @retry(max_attempts=2, delay=2.0, backoff=1.0, exceptions=(ConnectionError, TimeoutError, OSError))
     def check_balance(self, chain):
         cfg = TESTNETS[chain]
         for rpc in [cfg["rpc"], cfg.get("rpc_fallback", "")]:
             if not rpc:
                 continue
             try:
-                w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 8}))
+                w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 10}))
                 bal = w3.eth.get_balance(self.addr)
                 return bal / 1e18, w3
             except Exception:
@@ -88,6 +118,7 @@ class TestnetFarm:
         print(f"     Wallet: {self.addr}")
         print(f"     Dica: Depois de pegar tokens, rode 'ecosystem.py farm'")
 
+    @retry(max_attempts=2, delay=5.0, backoff=1.0, exceptions=(TimeExhausted,))
     def send_self(self, chain, amount=0, w3=None):
         """Send testnet ETH to self (proof of activity)."""
         cfg = TESTNETS[chain]
@@ -118,7 +149,7 @@ class TestnetFarm:
         signed = w3.eth.account.sign_transaction(tx, self.pk)
         h = w3.eth.send_raw_transaction(signed.raw_transaction)
         hex_h = w3.to_hex(h)
-        w3.eth.wait_for_transaction_receipt(h, timeout=60)
+        w3.eth.wait_for_transaction_receipt(h, timeout=90)
         return hex_h
 
     def swap_test(self, chain):

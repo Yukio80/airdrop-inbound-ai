@@ -1,4 +1,5 @@
 import math
+from src.config_loader import CONFIG
 
 
 class AirdropPredictor:
@@ -32,7 +33,6 @@ class AirdropPredictor:
     def risk_score(self, signal: dict) -> int:
         score = 0
 
-        # 1) Protocol age (from createdAt timestamp)
         created_at = signal.get("createdAt", 0)
         if created_at:
             import time
@@ -44,7 +44,6 @@ class AirdropPredictor:
             elif age_days < 365:
                 score += 10
 
-        # 2) Number of audits
         audits = signal.get("audits", None)
         if audits is None:
             score += 15
@@ -55,7 +54,6 @@ class AirdropPredictor:
             if audits == 0:
                 score += 15
 
-        # 3) TVL volatility (stddev / mean of last 7 daily TVLs)
         tvl_snapshots = signal.get("tvl_snapshots", [])
         if len(tvl_snapshots) >= 2:
             mean_tvl = sum(tvl_snapshots) / len(tvl_snapshots)
@@ -68,7 +66,6 @@ class AirdropPredictor:
                 elif volatility > 0.2:
                     score += 10
 
-        # 4) Chain concentration
         chains = signal.get("chains", [])
         if isinstance(chains, (list, tuple)):
             if len(chains) <= 1:
@@ -80,3 +77,19 @@ class AirdropPredictor:
 
     def is_high_risk(self, signal: dict) -> bool:
         return self.risk_score(signal) > 70
+
+    @property
+    def tvl_weight(self):
+        return CONFIG.scoring_weights["tvl"]
+
+    @property
+    def growth_weight(self):
+        return CONFIG.scoring_weights["growth_7d"]
+
+    @property
+    def funding_weight(self):
+        return CONFIG.scoring_weights["funding"]
+
+    @property
+    def maturity_weight(self):
+        return CONFIG.scoring_weights["maturity"]

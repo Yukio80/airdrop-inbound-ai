@@ -37,6 +37,10 @@ EVENT_TEMPLATES = {
         "Risk Score: {risk_score}/100\n"
         "Reason: Risk threshold exceeded (>70)"
     ),
+    "ALERT": (
+        "{severity_icon} *Alert: {alert_type}*\n"
+        "{message}"
+    ),
 }
 
 
@@ -54,7 +58,12 @@ class NotificationManager:
         if not self._discord_configured:
             logger.warning("Discord not configured (set DISCORD_WEBHOOK_URL)")
 
-    def notify(self, event_type: str, payload: dict) -> None:
+    def notify(self, event_type: str, payload: dict, severity: str = "info") -> None:
+        sev_icons = {"critical": "\U0001f534", "warning": "\U000026a0", "info": "\U00002139\ufe0f"}
+        payload.setdefault("severity", severity)
+        payload.setdefault("severity_icon", sev_icons.get(severity, ""))
+        payload.setdefault("alert_type", event_type)
+
         template = EVENT_TEMPLATES.get(event_type)
         if not template:
             logger.warning(f"Unknown event type: {event_type}")

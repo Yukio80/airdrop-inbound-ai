@@ -42,7 +42,93 @@ class FootprintAuditor:
         self.reports_dir = ROOT / "reports"
         self.reports_dir.mkdir(exist_ok=True)
 
-    # ── EVM ──
+    # ── EVM Multi-Chain ──
+
+    def audit_evm_chain(self, wallet: str, chain: str) -> dict:
+        """
+        Fetch on-chain activity from an EVM chain explorer.
+        Supports: arbitrum, base, optimism, ethereum, polygon, bsc
+        """
+        from src.intelligence.chain_registry import get_chain, get_explorer_api_url
+
+        cfg = get_chain(chain)
+        result = {
+            "wallet": wallet,
+            "chain": chain,
+            "total_txs": 0,
+            "unique_contracts": [],
+            "unique_tokens": [],
+            "first_tx_date": None,
+            "last_tx_date": None,
+            "active_days": 0,
+            "protocols_detected": [],
+            "error": None,
+        }
+
+        if not cfg or not cfg.explorer_api:
+            result["error"] = f"No explorer configured for {chain}"
+            return result
+
+        api_key = os.getenv(cfg.explorer_key_env, "")
+        if not api_key:
+            result["error"] = f"{cfg.explorer_key_env} not set"
+            return result
+
+        try:
+            url = get_explorer_api_url(chain, "account", "txlist", address=wallet, sort="asc")
+            resp = requests.get(url, timeout=30)
+            time.sleep(0.25)
+            tx_data = resp.json()
+
+            tok_url = get_explorer_api_url(chain, "account", "tokentx", address=wallet, sort="asc")
+            tok_resp = requests.get(tok_url, timeout=30)
+            time.sleep(0.25)
+            tok_data = tok_resp.json()
+
+            all_txs = []
+            contracts = set()
+            tokens = set()
+            dates_set = set()
+
+            if tx_data.get("status") == "1" and isinstance(tx_data.get("result"), list):
+                for tx in tx_data["result"]:
+                    all_txs.append(tx)
+                    if tx.get("to"):
+                        contracts.add(tx["to"].lower())
+                    try:
+                        ts = datetime.fromtimestamp(int(tx["timeStamp"]))
+                        dates_set.add(ts.strftime("%Y-%m-%d"))
+                    except (ValueError, KeyError):
+                        pass
+
+            if tok_data.get("status") == "1" and isinstance(tok_data.get("result"), list):
+                for tx in tok_data["result"]:
+                    if tx.get("tokenSymbol"):
+                        tokens.add(tx["tokenSymbol"])
+                    try:
+                        ts = datetime.fromtimestamp(int(tx["timeStamp"]))
+                        dates_set.add(ts.strftime("%Y-%m-%d"))
+                    except (ValueError, KeyError):
+                        pass
+
+            protocols = set()
+            for addr in contracts:
+                if addr in KNOWN_PROTOCOLS:
+                    protocols.add(KNOWN_PROTOCOLS[addr])
+
+            dates_sorted = sorted(dates_set)
+            result["total_txs"] = len(all_txs)
+            result["unique_contracts"] = sorted(contracts)
+            result["unique_tokens"] = sorted(tokens)
+            result["first_tx_date"] = dates_sorted[0] if dates_sorted else None
+            result["last_tx_date"] = dates_sorted[-1] if dates_sorted else None
+            result["active_days"] = len(dates_sorted)
+            result["protocols_detected"] = sorted(protocols)
+
+        except requests.RequestException as e:
+            result["error"] = str(e)
+
+        return result
 
     def audit_evm(self, wallet: str) -> dict:
         """Fetch on-chain activity from Arbiscan for a wallet."""

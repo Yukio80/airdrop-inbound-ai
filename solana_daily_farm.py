@@ -8,7 +8,7 @@ Estratégia:
   - 1 protocolo rotativo por dia (Mon-Sat) → diversificação
   - Domingo: só swap (descanso)
 
-Custo estimado: ~0.00003 SOL/dia em fees
+Hardened with retry logic + state persistence.
 """
 import sys, os, logging, asyncio, json
 from pathlib import Path
@@ -26,6 +26,10 @@ logging.basicConfig(
     force=True,
 )
 
+from src.hardening.retry import retry
+from src.hardening.state_machine import StateMachine
+
+state = StateMachine()
 DAY = datetime.now().weekday()  # 0=Mon .. 6=Sun
 DAY_NAMES = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
 
@@ -41,6 +45,12 @@ ROTATION = [
 ]
 
 daily_proto = ROTATION[DAY] if DAY < 6 else None
+today_key = f"solana_protocol_day_{DAY}"
+
+# Check if this day's protocol was already executed
+if state.is_step_complete(today_key):
+    logging.info(f"⏩ {DAY_NAMES[DAY]} already farmed — skipping protocol")
+    daily_proto = None  # Skip protocol, still do proof-of-activity
 
 logging.info(f"\n{'='*50}")
 logging.info(f"🌅 Daily Farm — {DAY_NAMES[DAY]}-feira")
@@ -49,6 +59,7 @@ logging.info(f"{'='*50}")
 # ── Carregar wallet ──
 from solana_wallet import SolanaWalletManager
 from solders.keypair import Keypair
+from src.config_loader import CONFIG
 
 wm = SolanaWalletManager()
 wallet = wm.load_wallet("solana_real")
@@ -65,17 +76,22 @@ from solders.transaction import VersionedTransaction
 from solana.rpc.api import Client
 
 logging.info("🔄 Proof-of-activity diário")
+
+@retry(max_attempts=3, delay=2.0, backoff=2.0, exceptions=(Exception,))
+def send_self_transfer(client, wallet):
+    ix = transfer(
+        TransferParams(from_pubkey=wallet.pubkey(), to_pubkey=wallet.pubkey(), lamports=1),
+    )
+    cu_limit = set_compute_unit_limit(200_000)
+    cu_price = set_compute_unit_price(1_000)
+    blockhash = client.get_latest_blockhash().value.blockhash
+    msg = MessageV0.try_compile(wallet.pubkey(), [cu_limit, cu_price, ix], [], blockhash)
+    tx_bytes = bytes(VersionedTransaction(msg, [wallet]))
+    sig = client.send_raw_transaction(tx_bytes).value
+    return str(sig)
+
 client = Client("https://api.mainnet-beta.solana.com")
-ix = transfer(
-    TransferParams(from_pubkey=wallet.pubkey(), to_pubkey=wallet.pubkey(), lamports=1),
-)
-cu_limit = set_compute_unit_limit(200_000)
-cu_price = set_compute_unit_price(1_000)
-blockhash = client.get_latest_blockhash().value.blockhash
-msg = MessageV0.try_compile(wallet.pubkey(), [cu_limit, cu_price, ix], [], blockhash)
-tx_bytes = bytes(VersionedTransaction(msg, [wallet]))
-sig = client.send_raw_transaction(tx_bytes).value
-tx = str(sig)
+tx = send_self_transfer(client, wallet)
 logging.info(f"   ✅ Proof-of-activity: {tx}")
 
 # ── Executar protocolo do dia ──
@@ -116,7 +132,48 @@ if daily_proto:
         tx2 = real_adapter.execute(a, params)
         logging.info(f"   ✅ {p} {a}: {tx2}")
 
-# ── Salvar no DB ──
+    # ── Magic Eden NFT Farming ──
+    if CONFIG.magic_eden.get("enabled", False):
+        logging.info("🎨 Checking Magic Eden NFT portfolio...")
+        from adapters.solana.magic_eden_real import MagicEdenRealAdapter
+        me_adapter = MagicEdenRealAdapter(None, wallet)
+        portfolio = me_adapter.get_portfolio(str(wallet.pubkey()))
+        
+        target_count = CONFIG.magic_eden.get("target_nft_count", 3)
+        if portfolio["total_nfts"] < target_count:
+            from datetime import datetime
+            last_buy = db.get_last_tx_for_wallet(
+                wallet=str(wallet.pubkey()), 
+                chain="solana", 
+                protocol="magic_eden"
+            )
+            days_since = (datetime.now() - datetime.fromisoformat(last_buy['timestamp'])).days if last_buy else 999
+            
+            if days_since >= CONFIG.magic_eden.get("buy_frequency_days", 7):
+                logging.info(f"   🛒 Buying NFT to reach target ({portfolio['total_nfts']}/{target_count})...")
+                me_res = me_adapter.execute(dry_run=False)
+                if me_res.get("success"):
+                    tx_me = me_res["tx_hash"]
+                    logging.info(f"   ✅ Magic Eden buy: {tx_me}")
+                    db.log_transaction(
+                        wallet=str(wallet.pubkey()),
+                        protocol="magic_eden",
+                        action="nft_buy",
+                        tx_hash=tx_me,
+                        metadata=json.dumps({
+                            "mint": me_res.get("mint"),
+                            "collection": me_res.get("collection"),
+                            "price_sol": me_res.get("price_sol")
+                        })
+                    )
+                else:
+                    logging.warning(f"   ❌ Magic Eden buy failed: {me_res.get('reason', 'unknown')}")
+            else:
+                logging.info(f"   ⏳ Skipping ME buy: last buy {days_since}d ago")
+        else:
+            logging.info(f"   ✅ Magic Eden target reached ({portfolio['total_nfts']} NFTs)")
+
+    # ── Salvar no DB ──
 from utils.db_manager import DatabaseManager
 db = DatabaseManager()
 
@@ -125,6 +182,10 @@ wallet_str = str(wallet.pubkey())
 db.log_transaction(wallet_str, "jupiter", "swap", tx)
 if daily_proto:
     db.log_transaction(wallet_str, daily_proto["protocol"], daily_proto["action"], tx2)
+
+# Persist state — mark today as completed
+state.mark_step_complete(today_key)
+state.set("last_solana_farm", datetime.now().isoformat())
 
 logging.info(f"📊 Dia {DAY_NAMES[DAY]} concluído")
 logging.info(f"{'='*50}\n")

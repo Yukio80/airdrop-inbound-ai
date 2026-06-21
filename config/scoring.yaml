@@ -1,0 +1,67 @@
+# Airdrop Opportunity Index (AOI) — weight configuration
+# All weights must sum to 1.0
+# Edit this file to adjust scoring without modifying Python code.
+
+version: "1.0"
+
+eligibility_weights:
+  base_score: 0.20
+  window_urgency: 0.35
+  chain_priority: 0.20
+  funding_recency: 0.15
+  tvl_trend_bonus: 0.10
+
+scoring_weights:
+  tvl: 0.30
+  growth_7d: 0.40
+  funding: 0.20
+  maturity: 0.10
+
+thresholds:
+  min_eligibility_score: 10
+  high_urgency_score: 75
+  medium_urgency_score: 50
+  execution_min_score: 30
+
+chains:
+  priority_1: ["arbitrum", "base", "solana", "sonic", "berachain"]
+  priority_2: ["optimism", "zksync", "scroll", "linea", "polygon", "mantle"]
+
+alerts:
+  wallet_inactivity_days: 3
+  high_aoi_threshold: 70
+  min_active_days_per_week: 2
+
+yield_optimizer:
+  min_improvement_pct: 1.5
+  min_tvl_usd: 5000000
+  max_gas_usd: 5.0
+  reserve_eth_pct: 0.20
+  enabled_assets: ["USDC", "USDT"]
+  enabled_chains: ["arbitrum", "solana"]
+
+magic_eden:
+  max_price_sol: 0.05
+  target_nft_count: 3
+  buy_frequency_days: 7
+  enabled: true
+
+layerzero_cadencer:
+  enabled: true
+  amount_usdc_per_bridge: 3.0
+  max_daily_bridges: 2
+  min_interval_hours: 6
+  routes:
+    - from: arbitrum
+      to: base
+    - from: base
+      to: optimism
+    - from: optimism
+      to: arbitrum
+    - from: arbitrum
+      to: polygon
+    - from: polygon
+      to: base
+  max_gas_usd_per_bridge: 3.0
+
+
